@@ -3,11 +3,14 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 #include <FreeRTOS.h>
+#include <freertos/semphr.h>
+// Création d'un mutex
+	SemaphoreHandle_t mutex = NULL;
+
 #include <string.h>
 #include <HTTPClient.h>
 // #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
-// #include <Adafruit_NeoPixel.h>
 
 const char *SSID = "MartinLopez";
 const char *PWD = "0651818124";
@@ -19,6 +22,9 @@ unsigned long interval = 30000;
 #define DELAY_READ_PROBES 10 // in seconds
 #define BATTERY_PIN 35
 #define LD1 16
+const int  FREQ = 5000;
+const int  LD1CHANNEL = 0;
+const int  RESOLUTION = 8;
 
 // JSON data buffer
 StaticJsonDocument<500> jsonDocument;
@@ -56,8 +62,7 @@ char json[500];
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define SCREEN_BLUE_0 16 // OLED blue area start
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST);
-
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST); // , 120000UL, 120000UL
 // Web server running on port 80
 WebServer server(80);
 
@@ -211,29 +216,29 @@ void displayNetwork(){
 	display.setCursor(0,0);
 	display.printf("%s\n",SSID);
 	display.print(IP);
-
+	boolean connected = WiFi.status() == WL_CONNECTED ? true : false;
 	display.fillRect(99, 0, 20, 16, BLACK);
-	if (attenuation >= -80){
+	if (attenuation >= -80 && connected){
 		display.fillRect(99, 12, 4, 4, WHITE);
 	} else {
 		display.drawRect(99, 12, 4, 4, WHITE);
 	}
-	if (attenuation >= -73){
+	if (attenuation >= -73 && connected){
 		display.fillRect(104, 8, 4, 8, WHITE);
 	} else {
 		display.drawRect(104, 8, 4, 8, WHITE);
 	}
-	if (attenuation >= -67){
+	if (attenuation >= -67 && connected){
 		display.fillRect(109, 4, 4, 12, WHITE);
 	} else {
 		display.drawRect(109, 4, 4, 12, WHITE);
 	}
-	if (attenuation >= -60){
+	if (attenuation >= -60 && connected){
 		display.fillRect(114, 0, 4, 16, WHITE);
 	} else {
 		display.drawRect(114, 0, 4, 16, WHITE);
 	}
-	if (attenuation <= -80){
+	if (attenuation <= -80 || !connected){
 		display.drawLine(99, 0, 118, 14, WHITE);
 		display.drawLine(99, 1, 118, 15, WHITE);
 		display.drawLine(99, 2, 118, 16, BLACK);
@@ -248,7 +253,7 @@ void displaySensor(){
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
 	display.printf("Hum:%.1f%%",humidity);
 	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%.0f%%",CO2);
+	display.printf("CO2:%.0fppm",CO2);
 }
 
 void init_WiFi (){
@@ -273,14 +278,6 @@ void init_WiFi (){
 void check_WiFi (boolean log = false){
 	unsigned long currentMillis = millis();
 // if WiFi is down, try reconnecting
-	if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-		Working = true;
-		Serial.print(millis());
-		Serial.println("Reconnecting to WiFi...");
-		WiFi.disconnect();
-		WiFi.reconnect();
-		previousMillis = currentMillis;
-	}
 	HostName = WiFi.getHostname();
 	IP = WiFi.localIP().toString();
 	GW = WiFi.gatewayIP().toString();
@@ -288,6 +285,30 @@ void check_WiFi (boolean log = false){
 	MAC = WiFi.macAddress();
 	DNS = WiFi.dnsIP().toString();
 	attenuation = WiFi.RSSI();
+	if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+		Working = true;
+		// IP = "";
+		// GW = "";
+		// CIDR = "";
+		// DNS = "";
+		// attenuation = "";
+
+		Serial.print(millis());
+		Serial.println("Reconnecting to WiFi...");
+		WiFi.disconnect();
+		WiFi.reconnect();
+		previousMillis = currentMillis;
+
+		HostName = WiFi.getHostname();
+		IP = WiFi.localIP().toString();
+		GW = WiFi.gatewayIP().toString();
+		CIDR = (String)(WiFi.subnetCIDR());
+		MAC = WiFi.macAddress();
+		DNS = WiFi.dnsIP().toString();
+		attenuation = WiFi.RSSI();
+
+		Working = false;
+	}
 
 	if (log){
 		Serial.printf("Network:");
@@ -299,9 +320,6 @@ void check_WiFi (boolean log = false){
 		Serial.print(" ");Serial.print(DNS);
 		Serial.printf(" %i dBm\n",attenuation);
 	}
-		delay(2000);
-
-	Working = false;
 }
 String getJSON() {
 	String json ="{";
@@ -409,11 +427,13 @@ void getSensorData(void * parameter) {
 		CO2 = 415.5;
 		getBatteryVoltage();
 		getBatteryCapacity();
-
+		xSemaphoreTake( mutex, portMAX_DELAY );
+			// read CO2 SPi or I2C
+		xSemaphoreGive( mutex );
 		postDataToServer();
-		// delay the task
-		vTaskDelay((DELAY_READ_PROBES * 1000 )/ portTICK_PERIOD_MS);
 		Working = false;
+		
+		vTaskDelay( pdMS_TO_TICKS( DELAY_READ_PROBES*1000 ) );
 		Serial.printf("Reading Sensors. %d\n",Working);
 	}
 }
@@ -445,11 +465,30 @@ void setup_routing() {
 }
 void isWorking(void * parameter){
 	for (;;) {
-		if (Working || (!Working && OnOff)){
-			digitalWrite(LD1, OnOff);
+			// digitalWrite(LD1, OnOff);
 			OnOff = !OnOff;
-		}
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+			// Max LED brightness 0, Min 255
+			for(int dutyCycle = 253; dutyCycle >= 140; dutyCycle-=2+Working*2){
+				ledcWrite(LD1CHANNEL, dutyCycle);   
+				vTaskDelay(3);
+			}
+			OnOff = !OnOff;
+			for(int dutyCycle = 140; dutyCycle <= 250; dutyCycle+=2+Working*2){   
+				ledcWrite(LD1CHANNEL, dutyCycle);
+				vTaskDelay(6);
+			}
+			OnOff = !OnOff;
+			for(int dutyCycle = 250; dutyCycle >= 100; dutyCycle-=2+Working*2){
+				ledcWrite(LD1CHANNEL, dutyCycle);   
+				vTaskDelay(3);
+			}
+			OnOff = !OnOff;
+			for(int dutyCycle = 100; dutyCycle <= 253; dutyCycle+=2+Working*2){   
+				ledcWrite(LD1CHANNEL, dutyCycle);
+				vTaskDelay(6);
+			}
+			OnOff = !OnOff;
+		vTaskDelay( (100));
 	}
 }
 // void waitHttpRequest(void * parameter){
@@ -467,36 +506,42 @@ void manageScreen(void * parameter){
 		displayBatteryLevel(BatCapacity);
 		displayNetwork();
 		displaySensor();
-		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 25, 48, WHITE);
+		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 25, 48, true);
 		if (Working || (!Working && OnOff)){
 			displayStatus(OnOff);
-			Serial.printf("Working = %d\n",Working);
-			display.display();
-			vTaskDelay(100 / portTICK_PERIOD_MS);
+			// Serial.printf("Working = %d\n",Working);
+			xSemaphoreTake( mutex, portMAX_DELAY );
+				display.display();
+			xSemaphoreGive( mutex );
+			vTaskDelay( pdMS_TO_TICKS(25));
 		} else {
-			Serial.print(".");
-			display.display();
-			vTaskDelay(500 / portTICK_PERIOD_MS);
+			// Serial.print(".");
+			xSemaphoreTake( mutex, portMAX_DELAY );
+				display.display();
+			xSemaphoreGive( mutex );
+			vTaskDelay( pdMS_TO_TICKS(25));
 		}
 		// delay the task
 	}
 }
 void setup_task() {
-	xTaskCreate(
+	xTaskCreatePinnedToCore(
 		manageScreen,
 		"xTask acces to screen",    // Name of the task (for debugging)
-		50000,             // Stack size (bytes)
+		20000,             // Stack size (bytes)
 		NULL,            // Parameter to pass
-		1,               // Task priority
-		NULL             // Task handle
+		6,               // Task priority
+		NULL,             // Task handle
+		1
 	);
-	xTaskCreate(
+	xTaskCreatePinnedToCore(
 		getSensorData,
 		"Read sensor data and put on server.",   // Name of the task (for debugging)
 		20000,            // Stack size (bytes)
 		NULL,            // Parameter to pass
-		1,               // Task priority
-		NULL             // Task handle
+		5,               // Task priority
+		NULL,             // Task handle
+		1
 	);
 	// xTaskCreate(
 	// 	waitHttpRequest,
@@ -506,13 +551,14 @@ void setup_task() {
 	// 	1,               // Task priority
 	// 	NULL             // Task handle
 	// );
-	xTaskCreate(
+	xTaskCreatePinnedToCore(
 		isWorking,
 		"Toogle LD1 on working",    // Name of the task (for debugging)
 		1000,             // Stack size (bytes)
 		NULL,            // Parameter to pass
-		1,               // Task priority
-		NULL             // Task handle
+		5,               // Task priority
+		NULL,             // Task handle
+		0
 	);
 
 	Serial.println("setup_task()");
@@ -521,9 +567,15 @@ void setup_task() {
 void setup() {
 	Serial.begin(115200);
 	Working = true;
+	mutex = xSemaphoreCreateMutex();
 
 	pinMode(BATTERY_PIN, INPUT);
-	pinMode(LD1, OUTPUT);
+	// pinMode(LD1, OUTPUT);
+	// configure LED PWM functionalitites
+	ledcSetup(LD1CHANNEL, FREQ, RESOLUTION);
+	// attach the channel to the GPIO to be controlled
+	ledcAttachPin(LD1, LD1CHANNEL);
+
 	// Sensor setup
 	// if (!bme.begin(0x76)) {
 	//   Serial.println("Problem connecting to BME280");
