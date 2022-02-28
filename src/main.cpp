@@ -12,9 +12,11 @@
 const char *SSID = "MartinLopez";
 const char *PWD = "0651818124";
 const char *hostname = "ESP32NodeSensor_1";
+const char* SrvPostData = "http://rpimaster/probe";
 unsigned long previousMillis = 0;
 unsigned long interval = 30000;
 
+#define DELAY_READ_PROBES 10 // in seconds
 #define BATTERY_PIN 35
 #define LD1 16
 
@@ -23,23 +25,23 @@ StaticJsonDocument<500> jsonDocument;
 char json[500];
 
 // env variable
-float temperature=1.01;
-float humidity=0.01;
-float pressure=0.01;
-float CO2=0.01;
-float BatVoltage=0.01;
-int BatCapacity=90;
-float PowerVoltage=0.01;
+	float temperature=1.01;
+	float humidity=0.01;
+	float pressure=0.01;
+	float CO2=0.01;
+	float BatVoltage=0.01;
+	int BatCapacity=90;
+	float PowerVoltage=0.01;
 
-String HostName;
-String IP;
-String MAC;
-String CIDR;
-String GW;
-String DNS;
-int attenuation;
-boolean Working = true;
-boolean OnOff = true;
+	String HostName;
+	String IP;
+	String MAC;
+	String CIDR;
+	String GW;
+	String DNS;
+	int attenuation;
+	boolean Working = true;
+	boolean OnOff = true;
 
 // #include <SPI.h>
 // #include <Wire.h>
@@ -122,6 +124,21 @@ const unsigned char logoNB [] PROGMEM = {
 #define RIGHT 4
 #define NONE 0
 
+void init_Screen (){
+  Serial.println("Enable OLED screen :");
+  //initialize OLED
+  pinMode(OLED_RST, OUTPUT);
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
+	Serial.println(F("SSD1306 allocation failed"));
+	for(;;); // Don't proceed, loop forever
+  }
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  Serial.println("Screen Enabled!");
+}
 void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char DisplayValue = NONE){
 	display.fillRoundRect(x-3, y-3, lenght+6, 10, 5, BLACK);
 	display.drawRoundRect(x-2, y-2, lenght+4, 8, 4, WHITE);
@@ -140,24 +157,39 @@ void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char 
 	display.printf("%i%%",level);
 	// display.setCursor(x+lround(lenght/2)+5,y+8);
 	// display.println("%");
-	display.display();
 }
-void init_Screen (){
-  Serial.println("Enable OLED screen :");
-  //initialize OLED
-  pinMode(OLED_RST, OUTPUT);
-  Wire.begin(OLED_SDA, OLED_SCL);
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
-	Serial.println(F("SSD1306 allocation failed"));
-	for(;;); // Don't proceed, loop forever
-  }
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  Serial.println("Screen Enabled!");
-}
+void displayStatus(boolean color){
+	int x = 113;
+	int y = 53;
+	display.fillRect(x, y, 28, 11, BLACK);
+	if (Working){
+		// Left Top arrow
+		display.drawRect(x+1, y+2, 9, 3, WHITE);
+		display.drawPixel(x, y+3, WHITE);
+		display.drawPixel(x+2, y+1, WHITE);
+		display.drawPixel(x+2, y+5, WHITE);
+		display.drawPixel(x+3, y, WHITE);
+		display.drawPixel(x+3, y+1, WHITE);
+		display.drawPixel(x+3, y+5, WHITE);
+		display.drawPixel(x+3, y+6, WHITE);
 
+		// Right Bottom arrow
+		display.drawRect(x+5, y+6, 9, 3, WHITE);
+		display.drawPixel(x+14, y+7, WHITE);
+		display.drawPixel(x+11, y+4, WHITE);
+		display.drawPixel(x+11, y+5, WHITE);
+		display.drawPixel(x+12, y+5, WHITE);
+		display.drawPixel(x+12, y+9, WHITE);
+		display.drawPixel(x+11, y+9, WHITE);
+		display.drawPixel(x+11, y+10, WHITE);
+
+		display.drawFastHLine(x+2,y+3,7,color ? WHITE : BLACK);
+		display.drawFastHLine(x+6,y+7,7,color ? BLACK : WHITE);
+
+		Serial.printf("Status(%d)\n",color);
+	}
+	// display.setCursor(x,y+13);
+}
 void displayBatteryLevel(int batteryLevel){
 		display.fillRect(120, 0, 8, 16, BLACK);
 		display.drawPixel(123, 0, WHITE);
@@ -169,14 +201,152 @@ void displayBatteryLevel(int batteryLevel){
 	} else if(batteryLevel > 10) {
 		display.fillRect(122, 3+lround((100-batteryLevel)*0.11), 4, lround((batteryLevel)*0.11), WHITE);
 	} else {
-		display.display();
-		delay(500);
 		display.drawRect(123, 4, 2, 6, WHITE);
 		display.drawRect(123, 11, 2, 2, WHITE);
 		/* code */
 	}
 }
-float getBatteryCapacity(float VBAT){
+void displayNetwork(){
+	display.setTextSize(0);
+	display.setCursor(0,0);
+	display.printf("%s\n",SSID);
+	display.print(IP);
+
+	display.fillRect(99, 0, 20, 16, BLACK);
+	if (attenuation >= -80){
+		display.fillRect(99, 12, 4, 4, WHITE);
+	} else {
+		display.drawRect(99, 12, 4, 4, WHITE);
+	}
+	if (attenuation >= -73){
+		display.fillRect(104, 8, 4, 8, WHITE);
+	} else {
+		display.drawRect(104, 8, 4, 8, WHITE);
+	}
+	if (attenuation >= -67){
+		display.fillRect(109, 4, 4, 12, WHITE);
+	} else {
+		display.drawRect(109, 4, 4, 12, WHITE);
+	}
+	if (attenuation >= -60){
+		display.fillRect(114, 0, 4, 16, WHITE);
+	} else {
+		display.drawRect(114, 0, 4, 16, WHITE);
+	}
+	if (attenuation <= -80){
+		display.drawLine(99, 0, 118, 14, WHITE);
+		display.drawLine(99, 1, 118, 15, WHITE);
+		display.drawLine(99, 2, 118, 16, BLACK);
+		display.drawLine(100, 0, 119, 14, BLACK);
+	}
+}
+void displaySensor(){
+	display.setCursor(30,SCREEN_BLUE_0+4);
+	display.printf("Temp:%.1f`C\n",temperature);
+	display.setCursor(30,SCREEN_BLUE_0+4+9);
+	display.printf("Press:%.1fhPa\n",pressure);
+	display.setCursor(30,SCREEN_BLUE_0+4+18);
+	display.printf("Hum:%.1f%%",humidity);
+	display.setCursor(30,SCREEN_BLUE_0+4+27);
+	display.printf("CO2:%.0f%%",CO2);
+}
+
+void init_WiFi (){
+	Working = true;
+  // Connect to Wi-Fi network with SSID and PWD
+	Serial.print("Connecting to wifi ");
+	Serial.print(SSID);
+	// https://randomnerdtutorials.com/esp32-useful-wi-fi-functions-arduino/
+	WiFi.mode(WIFI_STA);
+	WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+	WiFi.setHostname(hostname);
+	WiFi.disconnect();
+	WiFi.begin(SSID, PWD);
+	while (WiFi.status() != WL_CONNECTED) {
+		Serial.print(".");
+		delay(200);
+	}
+	// Print local IP address and start web server
+	Serial.println("WiFi connected.");
+	Working = false;
+}
+void check_WiFi (boolean log = false){
+	unsigned long currentMillis = millis();
+// if WiFi is down, try reconnecting
+	if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+		Working = true;
+		Serial.print(millis());
+		Serial.println("Reconnecting to WiFi...");
+		WiFi.disconnect();
+		WiFi.reconnect();
+		previousMillis = currentMillis;
+	}
+	HostName = WiFi.getHostname();
+	IP = WiFi.localIP().toString();
+	GW = WiFi.gatewayIP().toString();
+	CIDR = (String)(WiFi.subnetCIDR());
+	MAC = WiFi.macAddress();
+	DNS = WiFi.dnsIP().toString();
+	attenuation = WiFi.RSSI();
+
+	if (log){
+		Serial.printf("Network:");
+		Serial.print(" ");Serial.print(HostName);
+		Serial.print(" ");Serial.print(IP);
+		Serial.print(" ");Serial.print(GW);
+		Serial.print(" ");Serial.print(CIDR);
+		Serial.print(" ");Serial.print(MAC);
+		Serial.print(" ");Serial.print(DNS);
+		Serial.printf(" %i dBm\n",attenuation);
+	}
+		delay(2000);
+
+	Working = false;
+}
+String getJSON() {
+	String json ="{";
+		json += "\"Network\": {\"hostname\": \""+String(HostName)+"\",\"SSID\": \""+String(SSID)+"\",\"MAC\": \""+String(MAC)+"\",\"IP\": \""+String(IP)+"\",\"CIDR\": \""+String(CIDR)+"\",\"Gateway\": \""+String(GW)+"\",\"DNS\": \""+String(DNS)+"\",\"Strength\": {\"value\":"+String(attenuation)+",\"unit\": \"dBm\"}},";
+		json += "\"Temperature\": {\"value\":"+String(temperature)+",\"unit\": \"°C\"},";
+		json += "\"Pressure\": {\"value\":"+String(pressure)+",\"unit\": \"hPa\"},";
+		json += "\"Humidity\": {\"value\":"+String(humidity)+",\"unit\": \"%\"},";
+		json += "\"CO2\": {\"value\":"+String(CO2)+",\"unit\": \"ppm\"},";
+		json += "\"Battery\": {\"Voltage\": {\"value\":"+String(BatVoltage)+",\"unit\": \"V\"},\"Capacity\": {\"value\":"+String(BatCapacity)+",\"unit\": \"%\"}},";
+		json += "\"Power\": {\"value\":"+String(PowerVoltage)+",\"unit\": \"V\"}}";
+	return json;
+}
+void ApiJson(){
+	Working = true;
+	Serial.printf("API Reply JSON %d\n",Working);
+	delay(2000);
+	server.send(200, "application/json", getJSON());
+	Working = false;
+	Serial.printf("API Reply JSON %d\n",Working);
+}
+void postDataToServer() {
+	// Block until we are able to connect to the WiFi access point
+	if (WiFi.status() == WL_CONNECTED) {
+		Serial.println("Posting JSON data to server http://rpimaster/probe");
+
+		WiFiClient Wclient;  // or WiFiClientSecure for HTTPS
+		HTTPClient httpClient;
+
+		// Send request
+		httpClient.begin(Wclient, SrvPostData);
+		Serial.printf("POST(JSON) to %s > ",SrvPostData);
+		httpClient.addHeader("Content-Type", "application/json");
+		int httpResponseCode = httpClient.POST(getJSON()); // 
+
+		// Read response
+		Serial.println(httpResponseCode);
+		Serial.println(httpClient.getString());
+
+		// Disconnect
+		httpClient.end();
+		// delay(1000);
+	}
+}
+
+void getBatteryCapacity(){
 	struct batteryCapacity {
 		float voltage;
 		int capacity;
@@ -216,177 +386,38 @@ float getBatteryCapacity(float VBAT){
 	};
 	const int step = sizeof(remainingCapacity) / sizeof(struct batteryCapacity);
 	int i = 0;
-	while (VBAT < remainingCapacity[i].voltage && i < step) {
+	while (BatVoltage < remainingCapacity[i].voltage && i < step) {
 		i++;
 	}
 	BatCapacity = remainingCapacity[i].capacity;
 	// Serial.printf("Pourcentage Battery: %i%%\n",BatCapacity);
-	return BatCapacity;
 }
-float getBatteryVoltage(){
+void getBatteryVoltage(){
 	// Vbat = Vread * (R1 + R2) / R2
 	float Vread = ((float)analogRead(BATTERY_PIN) / 4096 * 3.3);
 	//   Serial.printf("TensionPin(35): %f\n",Vread);
 	BatVoltage =  Vread*(20120+9670)/20120;
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
-	return BatVoltage;
 }
-void displayNetwork(boolean log = false){
-	display.setTextSize(0);
-	display.setCursor(0,0);
-	display.printf("%s\n",SSID);
-	display.print(IP);
-
-	HostName = WiFi.getHostname();
-	IP = WiFi.localIP().toString();
-	GW = WiFi.gatewayIP().toString();
-	CIDR = (String)(WiFi.subnetCIDR());
-	MAC = WiFi.macAddress();
-	DNS = WiFi.dnsIP().toString();
-	attenuation = WiFi.RSSI();
-
-	if (log){
-		Serial.printf("Network:");
-		Serial.print(" ");Serial.print(HostName);
-		Serial.print(" ");Serial.print(IP);
-		Serial.print(" ");Serial.print(GW);
-		Serial.print(" ");Serial.print(CIDR);
-		Serial.print(" ");Serial.print(MAC);
-		Serial.print(" ");Serial.print(DNS);
-		Serial.printf(" %i dBm\n",attenuation);
-	}
-
-	display.fillRect(99, 0, 20, 16, BLACK);
-	if (attenuation >= -80){
-		display.fillRect(99, 12, 4, 4, WHITE);
-	} else {
-		display.drawRect(99, 12, 4, 4, WHITE);
-	}
-	if (attenuation >= -73){
-		display.fillRect(104, 8, 4, 8, WHITE);
-	} else {
-		display.drawRect(104, 8, 4, 8, WHITE);
-	}
-	if (attenuation >= -67){
-		display.fillRect(109, 4, 4, 12, WHITE);
-	} else {
-		display.drawRect(109, 4, 4, 12, WHITE);
-	}
-	if (attenuation >= -60){
-		display.fillRect(114, 0, 4, 16, WHITE);
-	} else {
-		display.drawRect(114, 0, 4, 16, WHITE);
-	}
-	if (attenuation <= -80){
-		display.drawLine(99, 0, 118, 14, WHITE);
-		display.drawLine(99, 1, 118, 15, WHITE);
-		display.drawLine(99, 2, 118, 16, BLACK);
-		display.drawLine(100, 0, 119, 14, BLACK);
-	}
-  	// progressbar (attenuation*-1);
-
-}
-void init_ToWiFi (){
-	Working = true;
-  // Connect to Wi-Fi network with SSID and PWD
-	Serial.print("Connecting to wifi ");
-	Serial.print(SSID);
-	// https://randomnerdtutorials.com/esp32-useful-wi-fi-functions-arduino/
-	WiFi.mode(WIFI_STA);
-	WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-	WiFi.setHostname(hostname);
-	WiFi.disconnect();
-	WiFi.begin(SSID, PWD);
-	while (WiFi.status() != WL_CONNECTED) {
-		Serial.print(".");
-		delay(200);
-	}
-	// Print local IP address and start web server
-	Serial.println("WiFi connected.");
-	displayNetwork(true);
-	Working = false;
-}
-void checkWifi (){
-	unsigned long currentMillis = millis();
-// if WiFi is down, try reconnecting
-	if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
-		Working = true;
-		Serial.print(millis());
-		Serial.println("Reconnecting to WiFi...");
-		WiFi.disconnect();
-		WiFi.reconnect();
-		previousMillis = currentMillis;
-		displayNetwork(true);
-	} else {
-		displayNetwork();
-	}
-	Working = false;
-}
-void displaySensor(){
-	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.printf("Temp:%.1f`C\n",temperature);
-	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.printf("Press:%.1fhPa\n",pressure);
-	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.printf("Hum:%.1f%%",humidity);
-	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%.0f%%",CO2);
-}
-String getJSON() {
-	String json ="{";
-		json += "\"Network\": {\"hostname\": \""+String(HostName)+"\",\"SSID\": \""+String(SSID)+"\",\"MAC\": \""+String(MAC)+"\",\"IP\": \""+String(IP)+"\",\"CIDR\": \""+String(CIDR)+"\",\"Gateway\": \""+String(GW)+"\",\"DNS\": \""+String(DNS)+"\",\"Strength\": {\"value\":"+String(attenuation)+",\"unit\": \"dBm\"}},";
-		json += "\"Temperature\": {\"value\":"+String(temperature)+",\"unit\": \"°C\"},";
-		json += "\"Pressure\": {\"value\":"+String(pressure)+",\"unit\": \"hPa\"},";
-		json += "\"Humidity\": {\"value\":"+String(humidity)+",\"unit\": \"%\"},";
-		json += "\"CO2\": {\"value\":"+String(CO2)+",\"unit\": \"ppm\"},";
-		json += "\"Battery\": {\"Voltage\": {\"value\":"+String(BatVoltage)+",\"unit\": \"V\"},\"Capacity\": {\"value\":"+String(BatCapacity)+",\"unit\": \"%\"}},";
-		json += "\"Power\": {\"value\":"+String(PowerVoltage)+",\"unit\": \"V\"}}";
-	return json;
-}
-void ApiJson(){
-	Working = true;
-	server.send(200, "application/json", getJSON());
-	delay(1000);
-	Working = false;
-}
-void postDataToServer() {
-	Serial.println("Posting JSON data to server http://rpimaster/probe");
-	// Block until we are able to connect to the WiFi access point
-	if (WiFi.status() == WL_CONNECTED) {
-		WiFiClient Wclient;  // or WiFiClientSecure for HTTPS
-		HTTPClient httpClient;
-
-		// Send request
-		httpClient.begin(Wclient, "http://rpimaster/probe");
-		Serial.print("POST(JSON) to http://rpimaster/probe > ");
-		httpClient.addHeader("Content-Type", "application/json");
-		int httpResponseCode = httpClient.POST(getJSON()); // 
-
-		// Read response
-		Serial.println(httpResponseCode);
-		Serial.println(httpClient.getString());
-
-		// Disconnect
-		httpClient.end();
-		// delay(1000);
-	}
-}
-void read_sensor_data(void * parameter) {
+void getSensorData(void * parameter) {
 	for (;;) {
 		Working = true;
-		Serial.println("Reading Sensors.");
+		Serial.printf("Reading Sensors %d\n",Working);
 		temperature = 8.3; // bme.readTemperature();
 		humidity = 56.2; // bme.readHumidity();
 		pressure = 1003.5; // bme.readPressure() / 100;
 		CO2 = 415.5;
+		getBatteryVoltage();
+		getBatteryCapacity();
+
 		postDataToServer();
 		// delay the task
-		vTaskDelay(15000 / portTICK_PERIOD_MS);
-		delay(2000);
+		vTaskDelay((DELAY_READ_PROBES * 1000 )/ portTICK_PERIOD_MS);
 		Working = false;
-
+		Serial.printf("Reading Sensors. %d\n",Working);
 	}
 }
+
 void handlePost() {
   if (server.hasArg("plain") == false) {
 	  Serial.println("");
@@ -400,14 +431,17 @@ void handlePost() {
   // Respond to the client
   server.send(200, "application/json", "{\"OK\"}");
 }
-
 // setup API resources
 void setup_routing() {
-	server.on("/", ApiJson);
-	server.on("/msg", HTTP_POST, handlePost);
-	Serial.println("setup_routing()");
-	// start server
-	server.begin();
+	if (WiFi.status() == WL_CONNECTED){
+		server.on("/", ApiJson);
+		server.on("/msg", HTTP_POST, handlePost);
+		Serial.println("setup_routing()");
+		// start server
+		server.begin();
+	} else {
+		Serial.println("Network is Missing!");
+	}
 }
 void isWorking(void * parameter){
 	for (;;) {
@@ -415,28 +449,72 @@ void isWorking(void * parameter){
 			digitalWrite(LD1, OnOff);
 			OnOff = !OnOff;
 		}
-		// delay the task
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
+// void waitHttpRequest(void * parameter){
+// 	setup_routing();
+// 	for (;;) {
+// 		server.handleClient();
+// 		vTaskDelay(500 / portTICK_PERIOD_MS);
+// 	}
+// }
 
+void manageScreen(void * parameter){
+	// init_Screen();
+	for (;;) {
+		display.clearDisplay();
+		displayBatteryLevel(BatCapacity);
+		displayNetwork();
+		displaySensor();
+		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 25, 48, WHITE);
+		if (Working || (!Working && OnOff)){
+			displayStatus(OnOff);
+			Serial.printf("Working = %d\n",Working);
+			display.display();
+			vTaskDelay(100 / portTICK_PERIOD_MS);
+		} else {
+			Serial.print(".");
+			display.display();
+			vTaskDelay(500 / portTICK_PERIOD_MS);
+		}
+		// delay the task
+	}
+}
 void setup_task() {
 	xTaskCreate(
-		read_sensor_data,
-		"Read sensor data",   // Name of the task (for debugging)
-		10000,            // Stack size (bytes)
+		manageScreen,
+		"xTask acces to screen",    // Name of the task (for debugging)
+		50000,             // Stack size (bytes)
 		NULL,            // Parameter to pass
 		1,               // Task priority
 		NULL             // Task handle
 	);
 	xTaskCreate(
+		getSensorData,
+		"Read sensor data and put on server.",   // Name of the task (for debugging)
+		20000,            // Stack size (bytes)
+		NULL,            // Parameter to pass
+		1,               // Task priority
+		NULL             // Task handle
+	);
+	// xTaskCreate(
+	// 	waitHttpRequest,
+	// 	"Attend les requetes API",    // Name of the task (for debugging)
+	// 	10000,             // Stack size (bytes)
+	// 	NULL,            // Parameter to pass
+	// 	1,               // Task priority
+	// 	NULL             // Task handle
+	// );
+	xTaskCreate(
 		isWorking,
-		"toogle LD1 on working",    // Name of the task (for debugging)
+		"Toogle LD1 on working",    // Name of the task (for debugging)
 		1000,             // Stack size (bytes)
 		NULL,            // Parameter to pass
 		1,               // Task priority
 		NULL             // Task handle
 	);
+
 	Serial.println("setup_task()");
 }
 
@@ -446,15 +524,13 @@ void setup() {
 
 	pinMode(BATTERY_PIN, INPUT);
 	pinMode(LD1, OUTPUT);
-
 	// Sensor setup
 	// if (!bme.begin(0x76)) {
 	//   Serial.println("Problem connecting to BME280");
 	// }
 	init_Screen();
 	setup_task();
-
-	init_ToWiFi();
+	init_WiFi();
 	setup_routing();
 
 	Serial.println("setup()");
@@ -463,14 +539,8 @@ void setup() {
 
 void loop() {
 	// Serial.println("loop(start)");
-	display.clearDisplay();
-	display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 25, 48, WHITE);
-	checkWifi();
-	displaySensor();
-	float VBAT = getBatteryVoltage();
-	int LevelBAT = getBatteryCapacity(VBAT);
-	displayBatteryLevel(LevelBAT);
-	display.display();
+	check_WiFi();
 	server.handleClient();
-	delay(2000);
+	// manageScreen(NULL);
+	delay(500);
 }
