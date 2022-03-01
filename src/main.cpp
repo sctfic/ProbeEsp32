@@ -19,9 +19,9 @@ const char* SrvPostData = "http://rpimaster/probe";
 unsigned long previousMillis = 0;
 unsigned long interval = 30000;
 
-#define DELAY_READ_PROBES 10 // in seconds
+#define DELAY_READ_PROBES 30 // in seconds
 #define BATTERY_PIN 35
-#define LD1 16
+#define LD1_PIN 16
 const int  FREQ = 5000;
 const int  LD1CHANNEL = 0;
 const int  RESOLUTION = 8;
@@ -46,14 +46,17 @@ char json[500];
 	String GW;
 	String DNS;
 	int attenuation;
-	boolean Working = true;
-	boolean OnOff = true;
-
+	bool Working = true;
+	bool OnOff = true;
+	bool DeepSleep = false;
+	bool WIFI_CONNECTED = false;
 // #include <SPI.h>
 // #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define BLACK 0
+#define WHITE 1
 //OLED pins
 #define OLED_SDA 5
 #define OLED_SCL 4
@@ -71,56 +74,17 @@ WebServer server(80);
 
 // Neopixel LEDs strip
 // Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_GRB + NEO_KHZ800);
- // 'logoNB', 25x48px
+ // 'logoNB', 23x48px
 const unsigned char logoNB [] PROGMEM = {
-	0x00, 0x10, 0x00, 0x00,
-	0x00, 0x10, 0x00, 0x00,
-	0x00, 0x18, 0x00, 0x00,
-	0x00, 0x18, 0x00, 0x00,
-	0x00, 0x18, 0x00, 0x00,
-	0x00, 0x10, 0x00, 0x00,
-	0x00, 0x10, 0x00, 0x00,
-	0x00, 0x28, 0x00, 0x00,
-	0x00, 0x28, 0x00, 0x00,
-	0x00, 0x08, 0x00, 0x00,
-	0x00, 0x50, 0x00, 0x00,
-	0x00, 0x90, 0x00, 0x00,
-	0x01, 0xb0, 0x00, 0x00,
-	0x01, 0x20, 0x00, 0x00,
-	0x02, 0x20, 0x00, 0x00,
-	0x04, 0x20, 0x00, 0x00,
-	0x04, 0x00, 0x00, 0x00,
-	0x04, 0x20, 0x20, 0x00,
-	0x08, 0x20, 0x30, 0x00,
-	0x08, 0x10, 0x38, 0x00,
-	0x08, 0x18, 0x48, 0x00,
-	0x08, 0x05, 0x88, 0x00,
-	0x08, 0x00, 0x08, 0x00,
-	0x08, 0x18, 0x08, 0x00,
-	0x00, 0x18, 0x08, 0x00,
-	0x04, 0x10, 0x08, 0x00,
-	0x04, 0x04, 0x08, 0x00,
-	0x02, 0x24, 0x08, 0x00,
-	0x02, 0x24, 0x10, 0x00,
-	0x42, 0x02, 0x10, 0x00,
-	0x62, 0x42, 0x10, 0x00,
-	0x72, 0x41, 0x10, 0x00,
-	0x4c, 0x81, 0x10, 0x00,
-	0x01, 0x80, 0x90, 0x00,
-	0x41, 0x00, 0xc8, 0x00,
-	0x42, 0x00, 0x47, 0x00,
-	0x62, 0x00, 0x01, 0x00,
-	0x34, 0x00, 0x21, 0x00,
-	0x0c, 0x00, 0x01, 0x00,
-	0x08, 0x34, 0x11, 0x00,
-	0x08, 0x22, 0x11, 0x00,
-	0x00, 0x02, 0x12, 0x00,
-	0x08, 0x26, 0x16, 0x00,
-	0x08, 0x18, 0x1c, 0x00,
-	0x04, 0x00, 0x30, 0x00,
-	0x06, 0x00, 0x20, 0x00,
-	0x02, 0x00, 0x40, 0x00,
-	0x00, 0xcf, 0x80, 0x00
+	0x00, 0x20, 0x00, 0x00, 0x20, 0x00, 0x00, 0x30, 0x00, 0x00, 0x30, 0x00, 0x00, 0x30, 0x00, 0x00, 
+	0x30, 0x00, 0x00, 0x70, 0x00, 0x00, 0x70, 0x00, 0x00, 0x50, 0x00, 0x00, 0x50, 0x00, 0x00, 0xb0, 
+	0x00, 0x01, 0xa0, 0x00, 0x01, 0x20, 0x00, 0x02, 0x40, 0x00, 0x06, 0x40, 0x00, 0x04, 0x40, 0x80, 
+	0x0c, 0x40, 0x80, 0x08, 0x40, 0xc0, 0x08, 0x40, 0xe0, 0x08, 0x60, 0xa0, 0x10, 0x30, 0xb0, 0x10, 
+	0x1f, 0x10, 0x18, 0x10, 0x10, 0x08, 0x30, 0x10, 0x08, 0x38, 0x10, 0x0c, 0x28, 0x20, 0x04, 0x28, 
+	0x20, 0x04, 0x48, 0x20, 0x06, 0x4c, 0x20, 0x42, 0x44, 0x20, 0x62, 0x84, 0x40, 0xf2, 0x82, 0x40, 
+	0x9d, 0x02, 0x40, 0x81, 0x01, 0x60, 0xc2, 0x01, 0x32, 0x42, 0x00, 0x8e, 0x64, 0x00, 0x82, 0x34, 
+	0x00, 0x42, 0x18, 0x38, 0x42, 0x08, 0x6c, 0x24, 0x08, 0x44, 0x24, 0x08, 0x44, 0x28, 0x08, 0x44, 
+	0x28, 0x0c, 0x38, 0x70, 0x04, 0x00, 0x40, 0x06, 0x00, 0xc0, 0x03, 0x83, 0x80, 0x00, 0xfe, 0x00
 };
 
 #define UP 1
@@ -128,6 +92,25 @@ const unsigned char logoNB [] PROGMEM = {
 #define LEFT 3
 #define RIGHT 4
 #define NONE 0
+
+#define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
+#define TIME_TO_SLEEP  30        /* Time ESP32 will go to sleep (in seconds) */
+
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
 
 void init_Screen (){
   Serial.println("Enable OLED screen :");
@@ -163,7 +146,7 @@ void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char 
 	// display.setCursor(x+lround(lenght/2)+5,y+8);
 	// display.println("%");
 }
-void displayStatus(boolean color){
+void displayStatus(bool color){
 	int x = 113;
 	int y = 53;
 	display.fillRect(x, y, 28, 11, BLACK);
@@ -191,7 +174,6 @@ void displayStatus(boolean color){
 		display.drawFastHLine(x+2,y+3,7,color ? WHITE : BLACK);
 		display.drawFastHLine(x+6,y+7,7,color ? BLACK : WHITE);
 
-		Serial.printf("Status(%d)\n",color);
 	}
 	// display.setCursor(x,y+13);
 }
@@ -216,29 +198,28 @@ void displayNetwork(){
 	display.setCursor(0,0);
 	display.printf("%s\n",SSID);
 	display.print(IP);
-	boolean connected = WiFi.status() == WL_CONNECTED ? true : false;
 	display.fillRect(99, 0, 20, 16, BLACK);
-	if (attenuation >= -80 && connected){
+	if (attenuation >= -80 && WIFI_CONNECTED){
 		display.fillRect(99, 12, 4, 4, WHITE);
 	} else {
 		display.drawRect(99, 12, 4, 4, WHITE);
 	}
-	if (attenuation >= -73 && connected){
+	if (attenuation >= -73 && WIFI_CONNECTED){
 		display.fillRect(104, 8, 4, 8, WHITE);
 	} else {
 		display.drawRect(104, 8, 4, 8, WHITE);
 	}
-	if (attenuation >= -67 && connected){
+	if (attenuation >= -67 && WIFI_CONNECTED){
 		display.fillRect(109, 4, 4, 12, WHITE);
 	} else {
 		display.drawRect(109, 4, 4, 12, WHITE);
 	}
-	if (attenuation >= -60 && connected){
+	if (attenuation >= -60 && WIFI_CONNECTED){
 		display.fillRect(114, 0, 4, 16, WHITE);
 	} else {
 		display.drawRect(114, 0, 4, 16, WHITE);
 	}
-	if (attenuation <= -80 || !connected){
+	if (attenuation <= -80 || !WIFI_CONNECTED){
 		display.drawLine(99, 0, 118, 14, WHITE);
 		display.drawLine(99, 1, 118, 15, WHITE);
 		display.drawLine(99, 2, 118, 16, BLACK);
@@ -267,15 +248,16 @@ void init_WiFi (){
 	WiFi.setHostname(hostname);
 	WiFi.disconnect();
 	WiFi.begin(SSID, PWD);
-	while (WiFi.status() != WL_CONNECTED) {
+	while (WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736) ) {
 		Serial.print(".");
 		delay(200);
 	}
 	// Print local IP address and start web server
 	Serial.println("WiFi connected.");
+	WIFI_CONNECTED = true;
 	Working = false;
 }
-void check_WiFi (boolean log = false){
+void check_WiFi (bool log = false){
 	unsigned long currentMillis = millis();
 // if WiFi is down, try reconnecting
 	HostName = WiFi.getHostname();
@@ -285,7 +267,8 @@ void check_WiFi (boolean log = false){
 	MAC = WiFi.macAddress();
 	DNS = WiFi.dnsIP().toString();
 	attenuation = WiFi.RSSI();
-	if ((WiFi.status() != WL_CONNECTED) && (currentMillis - previousMillis >=interval)) {
+	if ((WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736)) && (currentMillis - previousMillis >= interval)) {
+		WIFI_CONNECTED = false;
 		Working = true;
 		// IP = "";
 		// GW = "";
@@ -340,11 +323,9 @@ void ApiJson(){
 	Working = false;
 	Serial.printf("API Reply JSON %d\n",Working);
 }
-void postDataToServer() {
+bool postDataToServer() {
 	// Block until we are able to connect to the WiFi access point
-	if (WiFi.status() == WL_CONNECTED) {
-		Serial.println("Posting JSON data to server http://rpimaster/probe");
-
+	if (WIFI_CONNECTED) {
 		WiFiClient Wclient;  // or WiFiClientSecure for HTTPS
 		HTTPClient httpClient;
 
@@ -360,8 +341,9 @@ void postDataToServer() {
 
 		// Disconnect
 		httpClient.end();
-		// delay(1000);
+		return httpResponseCode == 201 ? true : false;
 	}
+	return false;
 }
 
 void getBatteryCapacity(){
@@ -418,23 +400,26 @@ void getBatteryVoltage(){
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
 }
 void getSensorData(void * parameter) {
+	vTaskDelay( pdMS_TO_TICKS( 1000 ) );
 	for (;;) {
-		Working = true;
-		Serial.printf("Reading Sensors %d\n",Working);
-		temperature = 8.3; // bme.readTemperature();
-		humidity = 56.2; // bme.readHumidity();
-		pressure = 1003.5; // bme.readPressure() / 100;
-		CO2 = 415.5;
-		getBatteryVoltage();
-		getBatteryCapacity();
-		xSemaphoreTake( mutex, portMAX_DELAY );
-			// read CO2 SPi or I2C
-		xSemaphoreGive( mutex );
-		postDataToServer();
-		Working = false;
+		if (WIFI_CONNECTED) {
+			Working = true;
+			temperature = 8.3; // bme.readTemperature();
+			humidity = 56.2; // bme.readHumidity();
+			pressure = 1003.5; // bme.readPressure() / 100;
+			CO2 = 415.5;
+			getBatteryVoltage();
+			getBatteryCapacity();
+			xSemaphoreTake( mutex, portMAX_DELAY );
+				// read CO2 SPi or I2C
+			xSemaphoreGive( mutex );
+			DeepSleep = postDataToServer();
+			vTaskDelay( pdMS_TO_TICKS( 2000 ) );
+			Working = false;
+		} else {
+			vTaskDelay( pdMS_TO_TICKS( 200 ) );
+		}
 		
-		vTaskDelay( pdMS_TO_TICKS( DELAY_READ_PROBES*1000 ) );
-		Serial.printf("Reading Sensors. %d\n",Working);
 	}
 }
 
@@ -453,7 +438,7 @@ void handlePost() {
 }
 // setup API resources
 void setup_routing() {
-	if (WiFi.status() == WL_CONNECTED){
+	if (WIFI_CONNECTED){
 		server.on("/", ApiJson);
 		server.on("/msg", HTTP_POST, handlePost);
 		Serial.println("setup_routing()");
@@ -465,27 +450,27 @@ void setup_routing() {
 }
 void isWorking(void * parameter){
 	for (;;) {
-			// digitalWrite(LD1, OnOff);
+			// digitalWrite(LD1_PIN, OnOff);
 			OnOff = !OnOff;
 			// Max LED brightness 0, Min 255
 			for(int dutyCycle = 253; dutyCycle >= 140; dutyCycle-=2+Working*2){
 				ledcWrite(LD1CHANNEL, dutyCycle);   
-				vTaskDelay(3);
+				vTaskDelay(4-Working*2);
 			}
 			OnOff = !OnOff;
 			for(int dutyCycle = 140; dutyCycle <= 250; dutyCycle+=2+Working*2){   
 				ledcWrite(LD1CHANNEL, dutyCycle);
-				vTaskDelay(6);
+				vTaskDelay(7-Working*2);
 			}
 			OnOff = !OnOff;
 			for(int dutyCycle = 250; dutyCycle >= 100; dutyCycle-=2+Working*2){
 				ledcWrite(LD1CHANNEL, dutyCycle);   
-				vTaskDelay(3);
+				vTaskDelay(4-Working*2);
 			}
 			OnOff = !OnOff;
 			for(int dutyCycle = 100; dutyCycle <= 253; dutyCycle+=2+Working*2){   
 				ledcWrite(LD1CHANNEL, dutyCycle);
-				vTaskDelay(6);
+				vTaskDelay(7-Working*2);
 			}
 			OnOff = !OnOff;
 		vTaskDelay( (100));
@@ -506,24 +491,34 @@ void manageScreen(void * parameter){
 		displayBatteryLevel(BatCapacity);
 		displayNetwork();
 		displaySensor();
-		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 25, 48, true);
+		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
 		if (Working || (!Working && OnOff)){
 			displayStatus(OnOff);
 			// Serial.printf("Working = %d\n",Working);
 			xSemaphoreTake( mutex, portMAX_DELAY );
 				display.display();
 			xSemaphoreGive( mutex );
-			vTaskDelay( pdMS_TO_TICKS(25));
+			vTaskDelay( pdMS_TO_TICKS(100));
 		} else {
 			// Serial.print(".");
 			xSemaphoreTake( mutex, portMAX_DELAY );
 				display.display();
 			xSemaphoreGive( mutex );
-			vTaskDelay( pdMS_TO_TICKS(25));
+			vTaskDelay( pdMS_TO_TICKS(100));
 		}
-		// delay the task
+		if (DeepSleep){
+			Serial.println("GO deep_sleep_start()");
+			display.clearDisplay();
+			vTaskDelay( pdMS_TO_TICKS(3000));
+			xSemaphoreTake( mutex, portMAX_DELAY );
+				display.display();
+			xSemaphoreGive( mutex );
+			esp_deep_sleep_start();
+		}
+		
 	}
 }
+
 void setup_task() {
 	xTaskCreatePinnedToCore(
 		manageScreen,
@@ -560,26 +555,31 @@ void setup_task() {
 		NULL,             // Task handle
 		0
 	);
-
 	Serial.println("setup_task()");
 }
 
 void setup() {
 	Serial.begin(115200);
 	Working = true;
+	DeepSleep = false;
 	mutex = xSemaphoreCreateMutex();
 
+
 	pinMode(BATTERY_PIN, INPUT);
-	// pinMode(LD1, OUTPUT);
+	// pinMode(LD1_PIN, OUTPUT);
 	// configure LED PWM functionalitites
 	ledcSetup(LD1CHANNEL, FREQ, RESOLUTION);
 	// attach the channel to the GPIO to be controlled
-	ledcAttachPin(LD1, LD1CHANNEL);
+	ledcAttachPin(LD1_PIN, LD1CHANNEL);
 
 	// Sensor setup
 	// if (!bme.begin(0x76)) {
 	//   Serial.println("Problem connecting to BME280");
 	// }
+	print_wakeup_reason();
+	esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+	Serial.println("Setup ESP32 to sleep for every " + String(TIME_TO_SLEEP) + " Seconds");
+
 	init_Screen();
 	setup_task();
 	init_WiFi();
@@ -587,6 +587,7 @@ void setup() {
 
 	Serial.println("setup()");
 	Working = false;
+	Serial.flush(); 
 }
 
 void loop() {
