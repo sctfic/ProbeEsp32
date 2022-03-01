@@ -238,6 +238,7 @@ void displaySensor(){
 }
 
 void init_WiFi (){
+	int wait = 100;
 	Working = true;
   // Connect to Wi-Fi network with SSID and PWD
 	Serial.print("Connecting to wifi ");
@@ -248,9 +249,15 @@ void init_WiFi (){
 	WiFi.setHostname(hostname);
 	WiFi.disconnect();
 	WiFi.begin(SSID, PWD);
-	while (WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736) ) {
+	while (WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736)) {
 		Serial.print(".");
 		delay(200);
+		if (wait == 0) {
+			wait = 100;
+			WiFi.disconnect();
+			WiFi.reconnect();
+		}
+		wait -= 1;
 	}
 	// Print local IP address and start web server
 	Serial.println("WiFi connected.");
@@ -325,7 +332,7 @@ void ApiJson(){
 }
 bool postDataToServer() {
 	// Block until we are able to connect to the WiFi access point
-	if (WIFI_CONNECTED) {
+	if (WIFI_CONNECTED && DeepSleep == false) {
 		WiFiClient Wclient;  // or WiFiClientSecure for HTTPS
 		HTTPClient httpClient;
 
@@ -515,7 +522,6 @@ void manageScreen(void * parameter){
 			xSemaphoreGive( mutex );
 			esp_deep_sleep_start();
 		}
-		
 	}
 }
 
