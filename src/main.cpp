@@ -1,25 +1,20 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WebServer.h>
-#include <ArduinoJson.h>
-#include <FreeRTOS.h>
-#include <freertos/semphr.h>
-// Création d'un mutex
-	SemaphoreHandle_t mutex = NULL;
-
 #include <string.h>
 #include <HTTPClient.h>
 // #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
 
-const char *SSID = "MartinLopez";
-const char *PWD = "0651818124";
+#include "global.h"
+#include "display.h"
+
 const char *hostname = "ESP32NodeSensor_1";
 const char* SrvPostData = "http://rpimaster/probe";
 unsigned long previousMillis = 0;
 unsigned long interval = 30000;
 
-#define DELAY_READ_PROBES 30 // in seconds
+// #define DELAY_READ_PROBES 30 // in seconds
 #define BATTERY_PIN 35
 #define LD1_PIN 16
 const int  FREQ = 5000;
@@ -30,42 +25,9 @@ const int  RESOLUTION = 8;
 StaticJsonDocument<500> jsonDocument;
 char json[500];
 
-// env variable
-	float temperature=1.01;
-	float humidity=0.01;
-	float pressure=0.01;
-	float CO2=0.01;
-	float BatVoltage=0.01;
-	int BatCapacity=90;
-	float PowerVoltage=0.01;
-
-	String HostName;
-	String IP;
-	String MAC;
-	String CIDR;
-	String GW;
-	String DNS;
-	int attenuation;
-	bool Working = true;
-	bool OnOff = true;
-	bool DeepSleep = false;
-	bool WIFI_CONNECTED = false;
 // #include <SPI.h>
 // #include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 
-#define BLACK 0
-#define WHITE 1
-//OLED pins
-#define OLED_SDA 5
-#define OLED_SCL 4
-#define OLED_RST 15 // 16
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define SCREEN_BLUE_0 16 // OLED blue area start
-
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST); // , 120000UL, 120000UL
 // Web server running on port 80
 WebServer server(80);
 
@@ -74,27 +36,10 @@ WebServer server(80);
 
 // Neopixel LEDs strip
 // Adafruit_NeoPixel pixels(NUM_OF_LEDS, PIN, NEO_GRB + NEO_KHZ800);
- // 'logoNB', 23x48px
-const unsigned char logoNB [] PROGMEM = {
-	0x00, 0x20, 0x00, 0x00, 0x20, 0x00, 0x00, 0x30, 0x00, 0x00, 0x30, 0x00, 0x00, 0x30, 0x00, 0x00, 
-	0x30, 0x00, 0x00, 0x70, 0x00, 0x00, 0x70, 0x00, 0x00, 0x50, 0x00, 0x00, 0x50, 0x00, 0x00, 0xb0, 
-	0x00, 0x01, 0xa0, 0x00, 0x01, 0x20, 0x00, 0x02, 0x40, 0x00, 0x06, 0x40, 0x00, 0x04, 0x40, 0x80, 
-	0x0c, 0x40, 0x80, 0x08, 0x40, 0xc0, 0x08, 0x40, 0xe0, 0x08, 0x60, 0xa0, 0x10, 0x30, 0xb0, 0x10, 
-	0x1f, 0x10, 0x18, 0x10, 0x10, 0x08, 0x30, 0x10, 0x08, 0x38, 0x10, 0x0c, 0x28, 0x20, 0x04, 0x28, 
-	0x20, 0x04, 0x48, 0x20, 0x06, 0x4c, 0x20, 0x42, 0x44, 0x20, 0x62, 0x84, 0x40, 0xf2, 0x82, 0x40, 
-	0x9d, 0x02, 0x40, 0x81, 0x01, 0x60, 0xc2, 0x01, 0x32, 0x42, 0x00, 0x8e, 0x64, 0x00, 0x82, 0x34, 
-	0x00, 0x42, 0x18, 0x38, 0x42, 0x08, 0x6c, 0x24, 0x08, 0x44, 0x24, 0x08, 0x44, 0x28, 0x08, 0x44, 
-	0x28, 0x0c, 0x38, 0x70, 0x04, 0x00, 0x40, 0x06, 0x00, 0xc0, 0x03, 0x83, 0x80, 0x00, 0xfe, 0x00
-};
 
-#define UP 1
-#define DOWN 2
-#define LEFT 3
-#define RIGHT 4
-#define NONE 0
 
 #define uS_TO_S_FACTOR 1000000  /* Conversion factor for micro seconds to seconds */
-#define TIME_TO_SLEEP  30        /* Time ESP32 will go to sleep (in seconds) */
+#define TIME_TO_SLEEP  30      /* Time ESP32 will go to sleep (in seconds) */
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -112,130 +57,7 @@ void print_wakeup_reason(){
   }
 }
 
-void init_Screen (){
-  Serial.println("Enable OLED screen :");
-  //initialize OLED
-  pinMode(OLED_RST, OUTPUT);
-  Wire.begin(OLED_SDA, OLED_SCL);
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
-	Serial.println(F("SSD1306 allocation failed"));
-	for(;;); // Don't proceed, loop forever
-  }
-  display.clearDisplay();
-  display.setTextColor(WHITE);
-  display.setTextSize(1);
-  display.setCursor(0,0);
-  Serial.println("Screen Enabled!");
-}
-void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char DisplayValue = NONE){
-	display.fillRoundRect(x-3, y-3, lenght+6, 10, 5, BLACK);
-	display.drawRoundRect(x-2, y-2, lenght+4, 8, 4, WHITE);
-	display.fillRoundRect(x, y, lround(lenght*level/100), 4, 2, WHITE);
-	display.setTextSize(1);
-	display.fillRect(x+lround(lenght/2)-8,y+7, 16, 9, BLACK);
-	int X;
-	if (level < 10){ // underBar
-		X=x+lround(lenght/2)-4;
-	} else {
-		X=x+lround(lenght/2)-7;
-	}
-	display.setCursor(X,y+8);
-	// display.setCursor(x+2+lround(lenght*level/100),y-1); // inBar
 
-	display.printf("%i%%",level);
-	// display.setCursor(x+lround(lenght/2)+5,y+8);
-	// display.println("%");
-}
-void displayStatus(bool color){
-	int x = 113;
-	int y = 53;
-	display.fillRect(x, y, 28, 11, BLACK);
-	if (Working){
-		// Left Top arrow
-		display.drawRect(x+1, y+2, 9, 3, WHITE);
-		display.drawPixel(x, y+3, WHITE);
-		display.drawPixel(x+2, y+1, WHITE);
-		display.drawPixel(x+2, y+5, WHITE);
-		display.drawPixel(x+3, y, WHITE);
-		display.drawPixel(x+3, y+1, WHITE);
-		display.drawPixel(x+3, y+5, WHITE);
-		display.drawPixel(x+3, y+6, WHITE);
-
-		// Right Bottom arrow
-		display.drawRect(x+5, y+6, 9, 3, WHITE);
-		display.drawPixel(x+14, y+7, WHITE);
-		display.drawPixel(x+11, y+4, WHITE);
-		display.drawPixel(x+11, y+5, WHITE);
-		display.drawPixel(x+12, y+5, WHITE);
-		display.drawPixel(x+12, y+9, WHITE);
-		display.drawPixel(x+11, y+9, WHITE);
-		display.drawPixel(x+11, y+10, WHITE);
-
-		display.drawFastHLine(x+2,y+3,7,color ? WHITE : BLACK);
-		display.drawFastHLine(x+6,y+7,7,color ? BLACK : WHITE);
-
-	}
-	// display.setCursor(x,y+13);
-}
-void displayBatteryLevel(int batteryLevel){
-		display.fillRect(120, 0, 8, 16, BLACK);
-		display.drawPixel(123, 0, WHITE);
-		display.drawPixel(124, 0, WHITE);
-		display.drawRect(120, 1, 8, 15, WHITE);
-	if (batteryLevel > 100) {
-  		display.drawLine(121, 4, 126, 12, WHITE);
-  		display.drawLine(121, 12, 126, 4, WHITE);
-	} else if(batteryLevel > 10) {
-		display.fillRect(122, 3+lround((100-batteryLevel)*0.11), 4, lround((batteryLevel)*0.11), WHITE);
-	} else {
-		display.drawRect(123, 4, 2, 6, WHITE);
-		display.drawRect(123, 11, 2, 2, WHITE);
-		/* code */
-	}
-}
-void displayNetwork(){
-	display.setTextSize(0);
-	display.setCursor(0,0);
-	display.printf("%s\n",SSID);
-	display.print(IP);
-	display.fillRect(99, 0, 20, 16, BLACK);
-	if (attenuation >= -80 && WIFI_CONNECTED){
-		display.fillRect(99, 12, 4, 4, WHITE);
-	} else {
-		display.drawRect(99, 12, 4, 4, WHITE);
-	}
-	if (attenuation >= -73 && WIFI_CONNECTED){
-		display.fillRect(104, 8, 4, 8, WHITE);
-	} else {
-		display.drawRect(104, 8, 4, 8, WHITE);
-	}
-	if (attenuation >= -67 && WIFI_CONNECTED){
-		display.fillRect(109, 4, 4, 12, WHITE);
-	} else {
-		display.drawRect(109, 4, 4, 12, WHITE);
-	}
-	if (attenuation >= -60 && WIFI_CONNECTED){
-		display.fillRect(114, 0, 4, 16, WHITE);
-	} else {
-		display.drawRect(114, 0, 4, 16, WHITE);
-	}
-	if (attenuation <= -80 || !WIFI_CONNECTED){
-		display.drawLine(99, 0, 118, 14, WHITE);
-		display.drawLine(99, 1, 118, 15, WHITE);
-		display.drawLine(99, 2, 118, 16, BLACK);
-		display.drawLine(100, 0, 119, 14, BLACK);
-	}
-}
-void displaySensor(){
-	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.printf("Temp:%.1f`C\n",temperature);
-	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.printf("Press:%.1fhPa\n",pressure);
-	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.printf("Hum:%.1f%%",humidity);
-	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%.0fppm",CO2);
-}
 
 void init_WiFi (){
 	int wait = 100;
@@ -253,7 +75,7 @@ void init_WiFi (){
 		Serial.print(".");
 		delay(200);
 		if (wait == 0) {
-			wait = 100;
+			wait = 200;
 			WiFi.disconnect();
 			WiFi.reconnect();
 		}
@@ -325,10 +147,9 @@ String getJSON() {
 void ApiJson(){
 	Working = true;
 	Serial.printf("API Reply JSON %d\n",Working);
-	delay(2000);
 	server.send(200, "application/json", getJSON());
+	delay(2000);
 	Working = false;
-	Serial.printf("API Reply JSON %d\n",Working);
 }
 bool postDataToServer() {
 	// Block until we are able to connect to the WiFi access point
@@ -352,51 +173,97 @@ bool postDataToServer() {
 	}
 	return false;
 }
-
 void getBatteryCapacity(){
-	struct batteryCapacity {
-		float voltage;
-		int capacity;
-	};
-	const batteryCapacity remainingCapacity[] = {
-		4.50,   120,
-		4.30,   110,
-		4.20,   100,
-		4.15,   98,
-		4.10,   96,
-		4.00,   92,
-		3.96,   89,
-		3.92,   85,
-		3.89,   81,
-		3.86,   77,
-		3.83,   73,
-		3.80,   69,
-		3.77,   65,
-		3.75,   62,
-		3.72,   58,
-		3.70,   55,
-		3.66,   51,
-		3.62,   47,
-		3.58,   43,
-		3.55,   40,
-		3.51,   35,
-		3.48,   32,
-		3.44,   26,
-		3.40,   24,
-		3.37,   20,
-		3.35,   17,
-		3.27,   13,
-		3.20,   9,
-		3.1,    6,
-		3.00,   3,
-		2.9,   0,
-	};
-	const int step = sizeof(remainingCapacity) / sizeof(struct batteryCapacity);
-	int i = 0;
-	while (BatVoltage < remainingCapacity[i].voltage && i < step) {
-		i++;
+	//  equation d'une Li-Ion sous faible charge a 20C
+	if (BatVoltage < 2.76){
+		BatCapacity = -1;
+	} else if (BatVoltage > 4.2){
+		BatCapacity = 101;
+	} else {
+		BatCapacity = (int)lround(-47391.44 + 68111.053*BatVoltage -38668.575*pow(BatVoltage,2) + 10828.2011*pow(BatVoltage,3) + -1494.5436*pow(BatVoltage,4) + 81.37904*pow(BatVoltage,5));
 	}
-	BatCapacity = remainingCapacity[i].capacity;
+
+	// const batteryCapacity remainingCapacity[] = {
+	// 4.20,	100.00,
+	// 4.18,	99.25,
+	// 4.16,	98.58,
+	// 4.14,	97.81,
+	// 4.12,	96.93,
+	// 4.10,	95.94,
+	// 4.08,	94.85,
+	// 4.06,	93.65,
+	// 4.04,	92.34,
+	// 4.02,	90.93,
+	// 4.00,	89.42,
+	// 3.98,	87.81,
+	// 3.96,	86.10,
+	// 3.94,	84.30,
+	// 3.92,	82.42,
+	// 3.90,	80.45,
+	// 3.88,	78.40,
+	// 3.86,	76.28,
+	// 3.84,	74.09,
+	// 3.82,	71.84,
+	// 3.80,	69.54,
+	// 3.78,	67.19,
+	// 3.76,	64.80,
+	// 3.74,	62.38,
+	// 3.72,	59.92,
+	// 3.70,	57.45,
+	// 3.68,	54.96,
+	// 3.66,	52.47,
+	// 3.64,	49.98,
+	// 3.62,	47.50,
+	// 3.60,	45.03,
+	// 3.58,	42.59,
+	// 3.56,	40.17,
+	// 3.54,	37.79,
+	// 3.52,	35.46,
+	// 3.50,	33.17,
+	// 3.48,	30.94,
+	// 3.46,	28.78,
+	// 3.44,	26.68,
+	// 3.42,	24.65,
+	// 3.40,	22.70,
+	// 3.38,	20.83,
+	// 3.36,	19.05,
+	// 3.34,	17.36,
+	// 3.32,	15.76,
+	// 3.30,	14.26,
+	// 3.28,	12.85,
+	// 3.26,	11.55,
+	// 3.24,	10.34,
+	// 3.22,	9.24,
+	// 3.20,	8.23,
+	// 3.18,	7.33,
+	// 3.16,	6.52,
+	// 3.14,	5.81,
+	// 3.12,	5.18,
+	// 3.10,	4.65,
+	// 3.08,	4.19,
+	// 3.06,	3.81,
+	// 3.04,	3.50,
+	// 3.02,	3.25,
+	//.3.00,	3.05,
+	// 2.98,	2.89,
+	// 2.96,	2.76,
+	// 2.94,	2.66,
+	// 2.92,	2.55,
+	// 2.90,	2.44,
+	// 2.88,	2.30,
+	// 2.86,	2.13,
+	// 2.84,	1.89,
+	// 2.82,	1.58,
+	// 2.80,	1.16,
+	// 2.78,	0.63,
+	// 2.76,	0.00,
+	// };
+	// const int step = sizeof(remainingCapacity) / sizeof(struct batteryCapacity);
+	// int i = 0;
+	// while (BatVoltage < remainingCapacity[i].voltage && i < step) {
+	// 	i++;
+	// }
+	// BatCapacity = remainingCapacity[i].capacity;
 	// Serial.printf("Pourcentage Battery: %i%%\n",BatCapacity);
 }
 void getBatteryVoltage(){
@@ -407,7 +274,6 @@ void getBatteryVoltage(){
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
 }
 void getSensorData(void * parameter) {
-	vTaskDelay( pdMS_TO_TICKS( 1000 ) );
 	for (;;) {
 		if (WIFI_CONNECTED) {
 			Working = true;
@@ -490,45 +356,38 @@ void isWorking(void * parameter){
 // 		vTaskDelay(500 / portTICK_PERIOD_MS);
 // 	}
 // }
+void enableDeepSleep(){
+	Serial.println("GO deep_sleep_start()");
+	xSemaphoreTake( mutex, portMAX_DELAY );
+		displayDeepSleep();
+	xSemaphoreGive( mutex );
+	esp_deep_sleep_start();
+}
 
 void manageScreen(void * parameter){
 	// init_Screen();
 	for (;;) {
-		display.clearDisplay();
-		displayBatteryLevel(BatCapacity);
-		displayNetwork();
-		displaySensor();
-		display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
+		redrawScreen();
 		if (Working || (!Working && OnOff)){
 			displayStatus(OnOff);
 			// Serial.printf("Working = %d\n",Working);
-			xSemaphoreTake( mutex, portMAX_DELAY );
-				display.display();
-			xSemaphoreGive( mutex );
+			refreshScreen();
 			vTaskDelay( pdMS_TO_TICKS(100));
 		} else {
 			// Serial.print(".");
-			xSemaphoreTake( mutex, portMAX_DELAY );
-				display.display();
-			xSemaphoreGive( mutex );
+			refreshScreen();
 			vTaskDelay( pdMS_TO_TICKS(100));
 		}
 		if (DeepSleep){
-			Serial.println("GO deep_sleep_start()");
-			display.clearDisplay();
 			vTaskDelay( pdMS_TO_TICKS(3000));
-			xSemaphoreTake( mutex, portMAX_DELAY );
-				display.display();
-			xSemaphoreGive( mutex );
-			esp_deep_sleep_start();
+			enableDeepSleep();
 		}
 	}
 }
-
 void setup_task() {
 	xTaskCreatePinnedToCore(
 		manageScreen,
-		"xTask acces to screen",    // Name of the task (for debugging)
+		"xTask acces to screen",	 // Name of the task (for debugging)
 		20000,             // Stack size (bytes)
 		NULL,            // Parameter to pass
 		6,               // Task priority
@@ -564,12 +423,15 @@ void setup_task() {
 	Serial.println("setup_task()");
 }
 
+
+
+
+
 void setup() {
 	Serial.begin(115200);
 	Working = true;
 	DeepSleep = false;
 	mutex = xSemaphoreCreateMutex();
-
 
 	pinMode(BATTERY_PIN, INPUT);
 	// pinMode(LD1_PIN, OUTPUT);
@@ -601,5 +463,7 @@ void loop() {
 	check_WiFi();
 	server.handleClient();
 	// manageScreen(NULL);
-	delay(500);
+	delay(200);
 }
+
+
