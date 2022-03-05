@@ -1,7 +1,9 @@
 #include <Arduino.h>
 #include <WiFi.h>
+// #include <ESPAsyncTCP.h>
+// #include <ESPAsyncWebServer.h>
 #include <WebServer.h>
-#include <string.h>
+// #include <string.h>
 #include <HTTPClient.h>
 // #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
@@ -9,21 +11,17 @@
 #include "global.h"
 #include "display.h"
 
-const char *hostname = "ESP32NodeSensor_1";
-const char* SrvPostData = "http://rpimaster/probe";
-unsigned long previousMillis = 0;
-unsigned long interval = 30000;
-
 // #define DELAY_READ_PROBES 30 // in seconds
 #define BATTERY_PIN 35
+#define POWER_PIN 32
 #define LD1_PIN 16
 const int  FREQ = 5000;
 const int  LD1CHANNEL = 0;
 const int  RESOLUTION = 8;
 
-// JSON data buffer
-StaticJsonDocument<500> jsonDocument;
-char json[500];
+// // JSON data buffer
+// StaticJsonDocument<500> jsonDocument;
+// char json[500];
 
 // #include <SPI.h>
 // #include <Wire.h>
@@ -57,111 +55,226 @@ void print_wakeup_reason(){
   }
 }
 
+bool check_WiFi_connected (){
+	WIFI_CONNECTED = !(WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736));
+	return WIFI_CONNECTED;
+}
+void SettingManager(){
 
+}
+void SettingSave(){
 
-void init_WiFi (){
-	int wait = 100;
-	Working = true;
+}
+
+void handleNotFound() {
+  String message = "File Not Found\n\n";
+  message += "URI: ";
+  message += server.uri();
+  message += "\nMethod: ";
+  message += (server.method() == HTTP_GET) ? "GET" : "POST";
+  message += "\nArguments: ";
+  message += server.args();
+  message += "\n";
+ 
+  for (uint8_t i = 0; i < server.args(); i++) {
+    message += " " + server.argName(i) + ": " + server.arg(i) + "\n";
+  }
+ 
+  server.send(404, "text/plain", message);
+}
+
+bool loadFromSPIFFS(String path) {
+  String dataType = "text/html";
+ 
+  Serial.print("Requested page -> ");
+  Serial.println(path);
+  if (SPIFFS.exists(path)){
+      File dataFile = SPIFFS.open(path, "r");
+      if (!dataFile) {
+          handleNotFound();
+          return false;
+      }
+ 
+      if (server.streamFile(dataFile, dataType) != dataFile.size()) {
+        Serial.println("Sent less data than expected!");
+      }else{
+          Serial.println("Page served!");
+      }
+ 
+      dataFile.close();
+  }else{
+      handleNotFound();
+      return false;
+  }
+  return true;
+}
+ 
+// Handle root url (/)
+void handle_root() {
+  loadFromSPIFFS("/index.html");
+}
+bool init_WiFi (){
   // Connect to Wi-Fi network with SSID and PWD
+	int wait = 100;
+	int i = 0;
+	int retry = 0;
+	Working = true;
+  	// delay(2000);
+
 	Serial.print("Connecting to wifi ");
-	Serial.print(SSID);
 	// https://randomnerdtutorials.com/esp32-useful-wi-fi-functions-arduino/
 	WiFi.mode(WIFI_STA);
-	WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
-	WiFi.setHostname(hostname);
 	WiFi.disconnect();
-	WiFi.begin(SSID, PWD);
-	while (WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736)) {
+	WiFi.setHostname(CurrentProbe.Network.Hostname.c_str());
+	// WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
+
+	WiFi.begin(CurrentProbe.Network.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
+
+	while (!check_WiFi_connected()) {
+		// Serial.println((int)WiFi.localIP());
 		Serial.print(".");
 		delay(200);
-		if (wait == 0) {
-			wait = 200;
+		if ( i >= wait ) {
+			i=0;
+			Serial.println("");
+
+			if (retry == 3) {
+				return false;
+			} 
+			retry++;
+			wait = wait * 1.2;
 			WiFi.disconnect();
 			WiFi.reconnect();
 		}
-		wait -= 1;
+		i++;
 	}
+	CurrentProbe.Network.Hostname       = WiFi.getHostname();
+	CurrentProbe.Network.IP             = WiFi.localIP().toString().c_str();
+	CurrentProbe.Network.Gateway        = WiFi.gatewayIP().toString().c_str();
+	CurrentProbe.Network.CIDR           = std::to_string(WiFi.subnetCIDR()).c_str() ;
+	CurrentProbe.Network.MAC            = WiFi.macAddress().c_str();
+	CurrentProbe.Network.DNS            = WiFi.dnsIP().toString().c_str();
+	CurrentProbe.Network.Strength       = MEASURE(WiFi.RSSI(), "dBm");
+
+	Serial.println(WiFi.getHostname());
+	Serial.println(WiFi.localIP().toString().c_str());
+	Serial.println(WiFi.gatewayIP().toString().c_str());
+	Serial.println(WiFi.subnetCIDR());
+	Serial.println(WiFi.macAddress().c_str());
+	Serial.println(WiFi.dnsIP().toString().c_str());
 	// Print local IP address and start web server
 	Serial.println("WiFi connected.");
-	WIFI_CONNECTED = true;
-	Working = false;
+	return true;
 }
-void check_WiFi (bool log = false){
-	unsigned long currentMillis = millis();
-// if WiFi is down, try reconnecting
-	HostName = WiFi.getHostname();
-	IP = WiFi.localIP().toString();
-	GW = WiFi.gatewayIP().toString();
-	CIDR = (String)(WiFi.subnetCIDR());
-	MAC = WiFi.macAddress();
-	DNS = WiFi.dnsIP().toString();
-	attenuation = WiFi.RSSI();
-	if ((WiFi.status() != WL_CONNECTED || ((int)WiFi.localIP() == 1073550736)) && (currentMillis - previousMillis >= interval)) {
-		WIFI_CONNECTED = false;
-		Working = true;
-		// IP = "";
-		// GW = "";
-		// CIDR = "";
-		// DNS = "";
-		// attenuation = "";
+bool init_WiFiManager(){
+		// Connect to Wi-Fi network with SSID and password
+	Serial.println("Setting AP (Access Point)");
+	// NULL sets an open Access Point
+	WiFi.softAP("ESP-WIFI-MANAGER", NULL);
 
-		Serial.print(millis());
-		Serial.println("Reconnecting to WiFi...");
+	IPAddress IP = WiFi.softAPIP();
+	Serial.print("AP IP address: ");
+	Serial.println(IP);
+
+	// Web Server Root URL
+	server.on("/", handle_root);
+
+	// server.on("/", HTTP_GET, SettingManager);
+	server.on("/", HTTP_POST, SettingSave);
+
+// 		// HTTP POST gateway value
+// 		if (p->name() == PARAM_INPUT_4) {
+// 			gateway = p->value().c_str();
+// 			Serial.print("Gateway set to: ");
+// 			Serial.println(gateway);
+// 			// Write file to save value
+// 			writeFile(SPIFFS, gatewayPath, gateway.c_str());
+// 		}
+// 		//Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
+// 		}
+// 	request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
+// 	delay(3000);
+// 	ESP.restart();
+// 	});
+// 	server.begin();
+}
+
+void reconnect_WiFi(){
+	while (!check_WiFi_connected()) {
+		Working = true;
 		WiFi.disconnect();
 		WiFi.reconnect();
-		previousMillis = currentMillis;
-
-		HostName = WiFi.getHostname();
-		IP = WiFi.localIP().toString();
-		GW = WiFi.gatewayIP().toString();
-		CIDR = (String)(WiFi.subnetCIDR());
-		MAC = WiFi.macAddress();
-		DNS = WiFi.dnsIP().toString();
-		attenuation = WiFi.RSSI();
-
-		Working = false;
+		CurrentProbe.Network.Hostname       = WiFi.getHostname();
+		CurrentProbe.Network.IP             = WiFi.localIP().toString().c_str();
+		CurrentProbe.Network.Gateway        = WiFi.gatewayIP().toString().c_str();
+		CurrentProbe.Network.CIDR           = std::to_string(WiFi.subnetCIDR()).c_str() ;
+		CurrentProbe.Network.MAC            = WiFi.macAddress().c_str();
+		CurrentProbe.Network.DNS            = WiFi.dnsIP().toString().c_str();
+		CurrentProbe.Network.Strength       = MEASURE(WiFi.RSSI(), "dBm");
 	}
+	Serial.print(CurrentProbe.Network.toJson().c_str());
+	Working = false;
+}
+// Initialize SPIFFS
+void initSPIFFS() {
+	if (!SPIFFS.begin(true)) {
+		Serial.println("An error has occurred while mounting SPIFFS");
+	}
+	Serial.println("SPIFFS mounted successfully");
+}
 
-	if (log){
-		Serial.printf("Network:");
-		Serial.print(" ");Serial.print(HostName);
-		Serial.print(" ");Serial.print(IP);
-		Serial.print(" ");Serial.print(GW);
-		Serial.print(" ");Serial.print(CIDR);
-		Serial.print(" ");Serial.print(MAC);
-		Serial.print(" ");Serial.print(DNS);
-		Serial.printf(" %i dBm\n",attenuation);
+// Read File from SPIFFS
+char* readFile(fs::FS &fs, const char * path){
+	Serial.printf("Reading file: %s\r\n", path);
+
+	File file = fs.open(path);
+	if(!file || file.isDirectory()){
+		Serial.println("- failed to open file for reading");
+		return "";
+	}
+	char NL = 10;
+	char * fileContent;
+	while(file.available()){
+		fileContent = (char*)file.readStringUntil(NL).c_str();
+		break;     
+	}
+	return fileContent;
+}
+
+// Write file to SPIFFS
+void writeFile(fs::FS &fs, const char * path, const char * message){
+	Serial.printf("Writing file: %s\r\n", path);
+
+	File file = fs.open(path, FILE_WRITE);
+	if(!file){
+		Serial.println("- failed to open file for writing");
+		return;
+	}
+	if(file.print(message)){
+		Serial.println("- file written");
+	} else {
+		Serial.println("- frite failed");
 	}
 }
-String getJSON() {
-	String json ="{";
-		json += "\"Network\": {\"hostname\": \""+String(HostName)+"\",\"SSID\": \""+String(SSID)+"\",\"MAC\": \""+String(MAC)+"\",\"IP\": \""+String(IP)+"\",\"CIDR\": \""+String(CIDR)+"\",\"Gateway\": \""+String(GW)+"\",\"DNS\": \""+String(DNS)+"\",\"Strength\": {\"value\":"+String(attenuation)+",\"unit\": \"dBm\"}},";
-		json += "\"Temperature\": {\"value\":"+String(temperature)+",\"unit\": \"°C\"},";
-		json += "\"Pressure\": {\"value\":"+String(pressure)+",\"unit\": \"hPa\"},";
-		json += "\"Humidity\": {\"value\":"+String(humidity)+",\"unit\": \"%\"},";
-		json += "\"CO2\": {\"value\":"+String(CO2)+",\"unit\": \"ppm\"},";
-		json += "\"Battery\": {\"Voltage\": {\"value\":"+String(BatVoltage)+",\"unit\": \"V\"},\"Capacity\": {\"value\":"+String(BatCapacity)+",\"unit\": \"%\"}},";
-		json += "\"Power\": {\"value\":"+String(PowerVoltage)+",\"unit\": \"V\"}}";
-	return json;
-}
+
 void ApiJson(){
 	Working = true;
 	Serial.printf("API Reply JSON %d\n",Working);
-	server.send(200, "application/json", getJSON());
+	server.send(200, "application/json", CurrentProbe.toJson().c_str());
 	delay(2000);
 	Working = false;
 }
 bool postDataToServer() {
 	// Block until we are able to connect to the WiFi access point
-	if (WIFI_CONNECTED && DeepSleep == false) {
+	if (WIFI_CONNECTED && DeepSleepNow == false) {
 		WiFiClient Wclient;  // or WiFiClientSecure for HTTPS
 		HTTPClient httpClient;
 
 		// Send request
-		httpClient.begin(Wclient, SrvPostData);
-		Serial.printf("POST(JSON) to %s > ",SrvPostData);
+		httpClient.begin(Wclient, CurrentProbe.Settings.SrvDataBase2Post.c_str());
+		Serial.printf("POST(JSON) to %s > ",CurrentProbe.Settings.SrvDataBase2Post.c_str());
 		httpClient.addHeader("Content-Type", "application/json");
-		int httpResponseCode = httpClient.POST(getJSON()); // 
+		int httpResponseCode = httpClient.POST(CurrentProbe.toJson().c_str());
 
 		// Read response
 		Serial.println(httpResponseCode);
@@ -175,124 +288,48 @@ bool postDataToServer() {
 }
 void getBatteryCapacity(){
 	//  equation d'une Li-Ion sous faible charge a 20C
-	if (BatVoltage < 2.76){
-		BatCapacity = -1;
-	} else if (BatVoltage > 4.2){
-		BatCapacity = 101;
+	if (CurrentProbe.Energy.PowerSupply.Voltage.Value > CurrentProbe.Energy.Battery.Voltage.Value && CurrentProbe.Energy.PowerSupply.Voltage.Value > 4.2){
+		CurrentProbe.Energy.Battery.Capacity = MEASURE(101,"Charging!");
+	// } else if (CurrentProbe.Energy.Battery.Voltage.Value < 2.76){
+	// 	CurrentProbe.Energy.Battery.Capacity = MEASURE(-1,"No Battery");
 	} else {
-		BatCapacity = (int)lround(-47391.44 + 68111.053*BatVoltage -38668.575*pow(BatVoltage,2) + 10828.2011*pow(BatVoltage,3) + -1494.5436*pow(BatVoltage,4) + 81.37904*pow(BatVoltage,5));
+		CurrentProbe.Energy.Battery.Capacity = MEASURE((int)lround(-47391.44 + 68111.053*CurrentProbe.Energy.Battery.Voltage.Value -38668.575*pow(CurrentProbe.Energy.Battery.Voltage.Value,2) + 10828.2011*pow(CurrentProbe.Energy.Battery.Voltage.Value,3) + -1494.5436*pow(CurrentProbe.Energy.Battery.Voltage.Value,4) + 81.37904*pow(CurrentProbe.Energy.Battery.Voltage.Value,5)),"%");
 	}
-
-	// const batteryCapacity remainingCapacity[] = {
-	// 4.20,	100.00,
-	// 4.18,	99.25,
-	// 4.16,	98.58,
-	// 4.14,	97.81,
-	// 4.12,	96.93,
-	// 4.10,	95.94,
-	// 4.08,	94.85,
-	// 4.06,	93.65,
-	// 4.04,	92.34,
-	// 4.02,	90.93,
-	// 4.00,	89.42,
-	// 3.98,	87.81,
-	// 3.96,	86.10,
-	// 3.94,	84.30,
-	// 3.92,	82.42,
-	// 3.90,	80.45,
-	// 3.88,	78.40,
-	// 3.86,	76.28,
-	// 3.84,	74.09,
-	// 3.82,	71.84,
-	// 3.80,	69.54,
-	// 3.78,	67.19,
-	// 3.76,	64.80,
-	// 3.74,	62.38,
-	// 3.72,	59.92,
-	// 3.70,	57.45,
-	// 3.68,	54.96,
-	// 3.66,	52.47,
-	// 3.64,	49.98,
-	// 3.62,	47.50,
-	// 3.60,	45.03,
-	// 3.58,	42.59,
-	// 3.56,	40.17,
-	// 3.54,	37.79,
-	// 3.52,	35.46,
-	// 3.50,	33.17,
-	// 3.48,	30.94,
-	// 3.46,	28.78,
-	// 3.44,	26.68,
-	// 3.42,	24.65,
-	// 3.40,	22.70,
-	// 3.38,	20.83,
-	// 3.36,	19.05,
-	// 3.34,	17.36,
-	// 3.32,	15.76,
-	// 3.30,	14.26,
-	// 3.28,	12.85,
-	// 3.26,	11.55,
-	// 3.24,	10.34,
-	// 3.22,	9.24,
-	// 3.20,	8.23,
-	// 3.18,	7.33,
-	// 3.16,	6.52,
-	// 3.14,	5.81,
-	// 3.12,	5.18,
-	// 3.10,	4.65,
-	// 3.08,	4.19,
-	// 3.06,	3.81,
-	// 3.04,	3.50,
-	// 3.02,	3.25,
-	//.3.00,	3.05,
-	// 2.98,	2.89,
-	// 2.96,	2.76,
-	// 2.94,	2.66,
-	// 2.92,	2.55,
-	// 2.90,	2.44,
-	// 2.88,	2.30,
-	// 2.86,	2.13,
-	// 2.84,	1.89,
-	// 2.82,	1.58,
-	// 2.80,	1.16,
-	// 2.78,	0.63,
-	// 2.76,	0.00,
-	// };
-	// const int step = sizeof(remainingCapacity) / sizeof(struct batteryCapacity);
-	// int i = 0;
-	// while (BatVoltage < remainingCapacity[i].voltage && i < step) {
-	// 	i++;
-	// }
-	// BatCapacity = remainingCapacity[i].capacity;
-	// Serial.printf("Pourcentage Battery: %i%%\n",BatCapacity);
 }
 void getBatteryVoltage(){
 	// Vbat = Vread * (R1 + R2) / R2
 	float Vread = ((float)analogRead(BATTERY_PIN) / 4096 * 3.3);
 	//   Serial.printf("TensionPin(35): %f\n",Vread);
-	BatVoltage =  Vread*(20120+9670)/20120;
+	CurrentProbe.Energy.Battery.Voltage =  MEASURE(Vread*(20120+9670)/20120,"V");
+	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
+}
+void getPowerVoltage(){
+	// Vbat = Vread * (R1 + R2) / R2
+	float Vread = ((float)analogRead(POWER_PIN) / 4096 * 3.3);
+	//   Serial.printf("TensionPin(35): %f\n",Vread);
+	CurrentProbe.Energy.PowerSupply.Voltage = MEASURE(Vread*2,"V");
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
 }
 void getSensorData(void * parameter) {
 	for (;;) {
 		if (WIFI_CONNECTED) {
 			Working = true;
-			temperature = 8.3; // bme.readTemperature();
-			humidity = 56.2; // bme.readHumidity();
-			pressure = 1003.5; // bme.readPressure() / 100;
-			CO2 = 415.5;
+			CurrentProbe.Probe.Temperature = MEASURE(8.3,"°C"); // bme.readTemperature();
+			CurrentProbe.Probe.Humidity = MEASURE(56.2,"%"); // bme.readHumidity();
+			CurrentProbe.Probe.Pressure = MEASURE(1003.5,"hPa"); // bme.readPressure() / 100;
+			CurrentProbe.Probe.CO2 = MEASURE(415.5,"ppm");
+			getPowerVoltage();
 			getBatteryVoltage();
 			getBatteryCapacity();
 			xSemaphoreTake( mutex, portMAX_DELAY );
 				// read CO2 SPi or I2C
 			xSemaphoreGive( mutex );
-			DeepSleep = postDataToServer();
+			DeepSleepNow = postDataToServer();
 			vTaskDelay( pdMS_TO_TICKS( 2000 ) );
 			Working = false;
 		} else {
 			vTaskDelay( pdMS_TO_TICKS( 200 ) );
 		}
-		
 	}
 }
 
@@ -303,7 +340,7 @@ void handlePost() {
 
   String body = server.arg("plain");
   Serial.println(body);
-  deserializeJson(jsonDocument, body);
+//   deserializeJson(jsonDocument, body);
 //   Serial.println(jsonDocument);
 
   // Respond to the client
@@ -358,10 +395,10 @@ void isWorking(void * parameter){
 // }
 void enableDeepSleep(){
 	Serial.println("GO deep_sleep_start()");
-	xSemaphoreTake( mutex, portMAX_DELAY );
-		displayDeepSleep();
-	xSemaphoreGive( mutex );
-	esp_deep_sleep_start();
+	displayDeepSleep();
+	if (CurrentProbe.Settings.EnableDeepSleep){
+		esp_deep_sleep_start();
+	}
 }
 
 void manageScreen(void * parameter){
@@ -378,7 +415,7 @@ void manageScreen(void * parameter){
 			refreshScreen();
 			vTaskDelay( pdMS_TO_TICKS(100));
 		}
-		if (DeepSleep){
+		if (DeepSleepNow){
 			vTaskDelay( pdMS_TO_TICKS(3000));
 			enableDeepSleep();
 		}
@@ -423,17 +460,28 @@ void setup_task() {
 	Serial.println("setup_task()");
 }
 
-
-
-
-
 void setup() {
 	Serial.begin(115200);
 	Working = true;
-	DeepSleep = false;
+	DeepSleepNow = false;
 	mutex = xSemaphoreCreateMutex();
+	initSPIFFS();
+	std::string SettingsJson = readFile(SPIFFS, "/Settings.json");
+	if(SettingsJson.length() > 2){
+		CurrentProbe.Settings = SETTINGS::fromJson(SettingsJson.c_str());
+	} else {
+		init_WiFiManager();
+	}
+
+	// CurrentProbe.Settings.SSID = "MartinLopez";
+	// CurrentProbe.Settings.PWD = "0651818124";
+	// CurrentProbe.Settings.SrvDataBase2Post = "http://rpimaster/probe";
+	// CurrentProbe.Settings.Hostname = "ESP32NodeSensor_1";
+	// CurrentProbe.Settings.EnableDeepSleep = true;
+	// CurrentProbe.Settings.DisplayDuringDeepSleep = true;
 
 	pinMode(BATTERY_PIN, INPUT);
+	pinMode(POWER_PIN, INPUT);
 	// pinMode(LD1_PIN, OUTPUT);
 	// configure LED PWM functionalitites
 	ledcSetup(LD1CHANNEL, FREQ, RESOLUTION);
@@ -459,11 +507,10 @@ void setup() {
 }
 
 void loop() {
-	// Serial.println("loop(start)");
-	check_WiFi();
+	reconnect_WiFi();
 	server.handleClient();
-	// manageScreen(NULL);
-	delay(200);
+	delay(5000);
+	// Serial.println(CurrentProbe.toJson().c_str());
 }
 
 
