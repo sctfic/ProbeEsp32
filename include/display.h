@@ -6,7 +6,7 @@ void init_Screen ();
 void displayStatus(bool color);
 // void displayBatteryLevel(int batteryLevel);
 // void displaySignal(int x);
-// void displayNetwork();
+void displayNetwork();
 // void displaySensor();
 void displayDeepSleep();
 void redrawScreen();

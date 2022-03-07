@@ -1,6 +1,6 @@
 #pragma once
-#include <freertos/FreeRTOS.h>
-#include <WString.h>
+// #include <freertos/FreeRTOS.h>
+// #include <WString.h>
 #include <string>
 #include "SPIFFS.h"
 
@@ -116,7 +116,12 @@ class SETTINGS{
     	std::string SSID; //'MartinLopez',
     	std::string PWD; //'Wifi Key',
     	std::string Hostname; //'ESP32NodeSensor_1',
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,SrvDataBase2Post,SSID,PWD,Hostname)
+    	std::string IP; //'192.168.1.32',
+    	std::string Mask; //'255.255.255.0',
+    	std::string Gateway; //'192.168.1.1',
+    	std::string DNS1; //'8.8.8.8',
+    	std::string DNS2; //'8.8.4.4',
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,SrvDataBase2Post,SSID,PWD,Hostname,IP,Mask,Gateway,DNS1,DNS2)
 		//"{...}"" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;
