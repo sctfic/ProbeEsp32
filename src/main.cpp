@@ -10,23 +10,13 @@
 #include <WiFi.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
-#include "SPIFFS.h"
 
+#include "SPIFFS.h"
 #include "global.h"
 #include "display.h"
 
 // Create AsyncWebServer object on port 80
 AsyncWebServer server(80);
-
-// Timer variables
-unsigned long previousMillis = 0;
-const long interval = 10000;  // interval to wait for Wi-Fi connection (milliseconds)
-
-// Set LED GPIO
-const int ledPin = 2;
-// Stores LED state
-
-String ledState;
 
 // Initialize SPIFFS
 void initSPIFFS() {
@@ -94,17 +84,20 @@ bool initWiFi() {
 	IPAddress DNS1;
 	IPAddress DNS2;
 
+
 	if (CurrentProbe.Settings.IP != "" && CurrentProbe.Settings.Mask != ""){
 		IP.fromString(CurrentProbe.Settings.IP.c_str());
 		Mask.fromString(CurrentProbe.Settings.Mask.c_str());
 		Gateway.fromString(CurrentProbe.Settings.Gateway.c_str());
 		DNS1.fromString(CurrentProbe.Settings.DNS1.c_str());
 		DNS2.fromString(CurrentProbe.Settings.DNS2.c_str());
-		if (!WiFi.config(IP, Gateway,Mask,DNS1,DNS2)){
+		if (!WiFi.config(IP, Gateway, Mask, DNS1, DNS2)){
 			Serial.println("STA Failed to configure as IPFixe");
 			WiFi.disconnect();
 		}
 	}
+	Serial.println("Set Hostname");
+	
 	if (CurrentProbe.Settings.Hostname != ""){
 		WiFi.setHostname(CurrentProbe.Settings.Hostname.c_str());
 	}
@@ -152,20 +145,6 @@ bool initWiFi() {
 	return true;
 }
 
-// Replaces placeholder with LED state value
-String processor(const String& var) {
-  if(var == "STATE") {
-    if(digitalRead(ledPin)) {
-      ledState = "ON";
-    }
-    else {
-      ledState = "OFF";
-    }
-    return ledState;
-  }
-  return String();
-}
-
 void setup_Routing(){
 
 	// Web Server Root URL
@@ -211,6 +190,11 @@ void setup_Routing(){
 		CurrentProbe.Settings.Hostname = request->arg("Hostname").c_str();
 		CurrentProbe.Settings.SSID = request->arg("SSID").c_str();
 		CurrentProbe.Settings.PWD = request->arg("PWD").c_str();
+		CurrentProbe.Settings.IP = request->arg("IP").c_str();
+		CurrentProbe.Settings.Mask = request->arg("Mask").c_str();
+		CurrentProbe.Settings.Gateway = request->arg("Gateway").c_str();
+		CurrentProbe.Settings.DNS1 = request->arg("DNS1").c_str();
+		CurrentProbe.Settings.DNS2 = request->arg("DNS2").c_str();
 		CurrentProbe.Settings.SrvDataBase2Post = request->arg("SrvDataBase2Post").c_str();
 
 		for(int i=0;i<paramsNr;i++){
@@ -228,21 +212,73 @@ void setup_Routing(){
 	});
     
     server.serveStatic("/", SPIFFS, "/");
+	Serial.print("Route loaded ! ");
     
     server.begin();
-}
+	Serial.print("Route applyed ! ");
 
+}
+void manageScreen(void * parameter){
+	init_Screen();
+	for (;;) {
+		redrawScreen();
+		if (Working || (!Working && OnOff)){
+			displayStatus(OnOff);
+			// Serial.printf("Working = %d\n",Working);
+			refreshScreen();
+			vTaskDelay( pdMS_TO_TICKS(100));
+		} else {
+			// Serial.print(".");
+			refreshScreen();
+			vTaskDelay( pdMS_TO_TICKS(100));
+		}
+		if (DeepSleepNow){
+			vTaskDelay( pdMS_TO_TICKS(3000));
+			// enableDeepSleep();
+		}
+	}
+}
+void setup_task() {
+	xTaskCreatePinnedToCore(
+		manageScreen,
+		"xTask acces to screen",	 // Name of the task (for debugging)
+		20000,             // Stack size (bytes)
+		NULL,              // Parameter to pass
+		6,                 // Task priority
+		NULL,              // Task handle
+		1                  // force CPU 1
+	);
+	// xTaskCreatePinnedToCore(
+	// 	getSensorData,
+	// 	"Read sensor data and put on server.",   // Name of the task (for debugging)
+	// 	20000,            // Stack size (bytes)
+	// 	NULL,            // Parameter to pass
+	// 	5,               // Task priority
+	// 	NULL,             // Task handle
+	// 	1
+	// );
+	// xTaskCreatePinnedToCore(
+	// 	isWorking,
+	// 	"Toogle LD1 on working",    // Name of the task (for debugging)
+	// 	1000,             // Stack size (bytes)
+	// 	NULL,            // Parameter to pass
+	// 	5,               // Task priority
+	// 	NULL,             // Task handle
+	// 	0
+	// );
+	Serial.println("setup_task()");
+}
 void setup() {
 	// Serial port for debugging purposes
 	Serial.begin(115200);
+	mutex = xSemaphoreCreateMutex();
 
 	initSPIFFS();
-	init_Screen();
 
 	std::string SettingsJson = readFile(SPIFFS, "/Settings.json");
 	Serial.println(CurrentProbe.Settings.toJson().c_str());
 	if(SettingsJson.length() > 2){
-		Serial.println(SettingsJson.c_str());
+		/Serial.println("Loading SettingsJson");
 		CurrentProbe.Settings = SETTINGS::fromJson(SettingsJson.c_str());
 		Serial.println(CurrentProbe.Settings.toJson().c_str());
 	}
@@ -259,7 +295,10 @@ void setup() {
 		Serial.println(IP); 
   	}
 	setup_Routing();
-	displayNetwork();
+	delay(2000);
+	// Serial.print("DISPLAY ! ");
+	// init_Screen();
+	setup_task();
 
 }
 
