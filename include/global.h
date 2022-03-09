@@ -1,19 +1,26 @@
 #pragma once
-// #include <freertos/FreeRTOS.h>
-// #include <WString.h>
-#include <string>
-#include "SPIFFS.h"
 
-#undef B1
-#include "json.h"
+#include <Arduino.h>
+#include "SPIFFS.h"
+#include <WiFi.h>
+
+#include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
 extern SemaphoreHandle_t mutex;
+
+// #include <WString.h>
+#include <string>
+// #include "SPIFFS.h"
+
+#undef B1
+#include "json.h"
 
 extern bool DeepSleepNow;
 extern bool Working;
 extern bool OnOff;
 extern bool WIFI_CONNECTED;
+extern const char * SettingsPath;
 
 
 class MEASURE {
@@ -33,7 +40,7 @@ class MEASURE {
 		};
 		// MEASURE maMesure = MEASURE::fromJson("{...}");
 		inline static MEASURE fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<MEASURE>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<MEASURE>();
 		};
 		inline std::string toString(){
 			return std::to_string(Value) + Unit;
@@ -53,7 +60,7 @@ class PROBE {
 		};
 		// PROBE maMesure = PROBE::fromJson("{...}");
 		inline static PROBE fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<PROBE>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<PROBE>();
 		};
 	};
 class NETWORK {
@@ -76,7 +83,7 @@ class NETWORK {
 		};
 		// NETWORK maMesure = NETWORK::fromJson("{...}");
 		inline static NETWORK fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<NETWORK>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<NETWORK>();
 		};
 	};
 class POWERSUPPLY {
@@ -105,7 +112,7 @@ class ENERGY{
 		};
 		// ENERGY maMesure = ENERGY::fromJson("{...}");
 		inline static ENERGY fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<ENERGY>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<ENERGY>();
 		};
 	};
 class SETTINGS{
@@ -117,19 +124,20 @@ class SETTINGS{
     	std::string PWD; //'Wifi Key',
     	std::string Hostname; //'ESP32NodeSensor_1',
     	std::string IP; //'192.168.1.32',
+    	bool DHCP;
     	std::string Mask; //'255.255.255.0',
     	std::string Gateway; //'192.168.1.1',
     	std::string DNS1; //'8.8.8.8',
     	std::string DNS2; //'8.8.4.4',
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,SrvDataBase2Post,SSID,PWD,Hostname,IP,Mask,Gateway,DNS1,DNS2)
-		//"{...}"" = maMesure.toJson();
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,SrvDataBase2Post,SSID,PWD,Hostname,DHCP,IP,Mask,Gateway,DNS1,DNS2)
+		//"{...}" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;
 			return json.dump();
 		};
 		// SETTINGS maMesure = SETTINGS::fromJson("{...}");
 		inline static SETTINGS fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<SETTINGS>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<SETTINGS>();
 		};
 	};
 class ESP32BOARD{
@@ -147,7 +155,7 @@ class ESP32BOARD{
 		};
 		// ESP32BOARD maMesure = ESP32BOARD::fromJson("{...}");
 		inline static ESP32BOARD fromJson(const std::string& jsonString){
-			return nlohmann::json::parse(jsonString).get<ESP32BOARD>();
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<ESP32BOARD>();
 		};
 	};
 

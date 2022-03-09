@@ -159,7 +159,7 @@ void displaySignal(int x){
 void displayNetwork(){
 	display.setTextSize(0);
 	display.setCursor(0,0);
-	display.printf("%s\n",CurrentProbe.Network.SSID.c_str());
+	display.println(CurrentProbe.Network.SSID.c_str());
 	display.print(CurrentProbe.Network.IP.c_str());
 	displaySignal(CurrentProbe.Network.Strength.Value);
 }
@@ -195,8 +195,8 @@ void displayDeepSleep(){
 }
 void redrawScreen(){
     display.clearDisplay();
-    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value);
     displayNetwork();
+    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value);
     displaySensor();
     display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
 }

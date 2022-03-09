@@ -786,9 +786,9 @@
 			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><br/>
 			<label class="dhcp"><input id="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
 				<span class="ipFixe">
-					<div class="row"><span class="two columns">IP</span><input id="ip" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="ip" type="text" value="192.168.1.32" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
-					<div class="row"><span class="two columns">MASK</span><input id="mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
-					<div class="row"><span class="two columns">GateWay</span><input id="gateway" class="ten columns" placeholder="GateWay (Ex: 192.168.1.1)" name="GateWay" type="text" value="192.168.1.1" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"></div>
+					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.32" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
+					<div class="row"><span class="two columns">MASK</span><input id="Mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="Mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
+					<div class="row"><span class="two columns">GateWay</span><input id="Gateway" class="ten columns" placeholder="GateWay (Ex: 192.168.1.1)" name="Gateway" type="text" value="192.168.1.1" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"></div>
 					<div class="row"><span class="two columns">DNS1</span><input id="DNS1" class="ten columns required" placeholder="DNS1 (Ex:8.8.8.8)" name="DNS1" type="text" value="8.8.8.8" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
 					<div class="row"><span class="two columns">DNS2</span><input id="DNS2" class="ten columns required" placeholder="DNS2 (Ex:8.8.4.4)" name="DNS2" type="text" value="8.8.4.4" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"></div>
 				</span>
@@ -817,9 +817,9 @@
 	</body>
 	<script>
 		function toogleIpFixe(input){
-			document.getElementById("ip").disabled = input.checked;
-			document.getElementById("mask").disabled = input.checked;
-			document.getElementById("gateway").disabled = input.checked;
+			document.getElementById("IP").disabled = input.checked;
+			document.getElementById("Mask").disabled = input.checked;
+			document.getElementById("Gateway").disabled = input.checked;
 			document.getElementById("DNS1").disabled = input.checked;
 			document.getElementById("DNS2").disabled = input.checked;
 		}
@@ -851,6 +851,7 @@
 				document.getElementById("PWD").value = Settings.PWD;
 				document.getElementById("SSID").value = Settings.SSID;
 				document.getElementById("SrvDataBase2Post").value = Settings.SrvDataBase2Post;
+				document.getElementById("DHCP").value = Settings.DHCP;
 			}
 		});
 		ajax('/scan',function() {
