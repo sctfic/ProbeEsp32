@@ -651,9 +651,6 @@
 				padding: 0mm;
 				background-color: white;
 			}
-			.NextQrCode {
-				page-break-before: always;
-			}
 		}
 		@page {
 			margin: 0px !important;
@@ -689,14 +686,6 @@
 			overflow:hidden;
 			word-break:normal;
 		}
-		.Societe {
-			height:3mm;
-			font-size:9px;
-			padding: 0.1mm 0mm 0.8mm 0mm;
-			color:black;
-			text-align:center;
-			vertical-align:top;
-		}
 		.tv-date {
 			font-size:10px;
 			color:black;
@@ -724,7 +713,24 @@
 		select:invalid, input:invalid {
 			border:1px solid red;
 			box-shadow: 0 0 6px grey;
-			text-shadow: 0 2px 3px red}
+			text-shadow: 0 2px 3px red
+		}
+		input[type=text]:invalid + span::before {
+			position: absolute;
+			zoom: 2;
+			left: -15px;
+			margin-top: -2px;
+			content: '✖';
+			color: red;
+		}
+		input[type=text]:valid + span::before {
+			position: absolute;
+			zoom: 3;
+			left: -11px;
+			margin-top: -5px;
+			content: '✓';
+			color: green;
+		}
 		input:required:placeholder-shown {
 			border:1px solid  red;
 			box-shadow: 0 0 6px grey;
@@ -782,18 +788,18 @@
 				<option value="loading">loading...</option>
 			</select>
 			<!-- <input id="SSID" class="u-full-width required" placeholder="Connect to Network : SSID" name="SSID" type="text" value="" required pattern="|(.{3,32})"><br/> -->
-			<input id="PWD" class="u-full-width required" placeholder="PassWord for this network" name="PWD" type="text" value="" required pattern="|(.{0,64})"><br/>
-			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><br/>
+			<input id="PWD" class="u-full-width required" placeholder="PassWord for this network" name="PWD" type="text" value="" required pattern="|(.{0,64})"><span></span><br/>
+			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><span></span><br/>
 			<label class="dhcp"><input id="DHCP" Name="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
 				<span class="ipFixe">
-					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.32" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
-					<div class="row"><span class="two columns">MASK</span><input id="Mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="Mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
-					<div class="row"><span class="two columns">GateWay</span><input id="Gateway" class="ten columns" placeholder="GateWay (Ex: 192.168.1.1)" name="Gateway" type="text" value="192.168.1.1" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"></div>
-					<div class="row"><span class="two columns">DNS1</span><input id="DNS1" class="ten columns required" placeholder="DNS1 (Ex:8.8.8.8)" name="DNS1" type="text" value="8.8.8.8" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
-					<div class="row"><span class="two columns">DNS2</span><input id="DNS2" class="ten columns required" placeholder="DNS2 (Ex:8.8.4.4)" name="DNS2" type="text" value="8.8.4.4" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"></div>
+					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.32" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
+					<div class="row"><span class="two columns">MASK</span><input id="Mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="Mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
+					<div class="row"><span class="two columns">GateWay</span><input id="Gateway" class="ten columns" placeholder="GateWay (Ex: 192.168.1.1)" name="Gateway" type="text" value="192.168.1.1" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
+					<div class="row"><span class="two columns">DNS1</span><input id="DNS1" class="ten columns required" placeholder="DNS1 (Ex:8.8.8.8)" name="DNS1" type="text" value="8.8.8.8" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
+					<div class="row"><span class="two columns">DNS2</span><input id="DNS2" class="ten columns required" placeholder="DNS2 (Ex:8.8.4.4)" name="DNS2" type="text" value="8.8.4.4" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span></div>
 				</span>
 			</label>
-			<input id="SrvDataBase2Post" class="u-full-width required" placeholder="Server DataBase URL for save Data" name="SrvDataBase2Post" type="text" value="http://rpimaster/AddProbeData" required pattern="|(.{3,256})"><br/>
+			<input id="SrvDataBase2Post" class="u-full-width required" placeholder="Server DataBase URL for save Data" name="SrvDataBase2Post" type="text" value="http://rpimaster/AddProbeData" required pattern="|(.{3,256})"><span></span><br/>
 		</td></tr>
 		<tr><td>
 			<label class="deepSleep"><input id="EnableDeepSleep" name="EnableDeepSleep" type="checkbox" onchange="toogleDisplay(this)"/>Deep Sleep (Power Saving)
@@ -845,13 +851,13 @@
 			if (this.readyState == 4 && this.status == 200) {
 				var Settings = JSON.parse(this.responseText).Settings;
 				console.log(Settings);
+				document.getElementById("DHCP").checked = Settings.DHCP;
 				document.getElementById("DisplayDuringDeepSleep").checked = Settings.DisplayDuringDeepSleep;
 				document.getElementById("EnableDeepSleep").checked = Settings.EnableDeepSleep;
 				document.getElementById("Hostname").value = Settings.Hostname;
 				document.getElementById("PWD").value = Settings.PWD;
 				document.getElementById("SSID").value = Settings.SSID;
 				document.getElementById("SrvDataBase2Post").value = Settings.SrvDataBase2Post;
-				document.getElementById("DHCP").value = Settings.DHCP;
 			}
 		});
 		ajax('/scan',function() {

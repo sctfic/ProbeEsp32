@@ -28,9 +28,9 @@ void manageScreen(void * parameter){
 			vTaskDelay( pdMS_TO_TICKS(300));
 			// enableDeepSleep();
 		}
-		Serial.printf("OnOff = %d\n",OnOff);
-		Serial.printf("Working = %d\n",Working);
-		Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
+		// Serial.printf("OnOff = %d\n",OnOff);
+		// Serial.printf("Working = %d\n",Working);
+		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
 	}
 }
 void setup_task() {
