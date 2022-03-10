@@ -6,6 +6,7 @@
 #include "fileSystem.h"
 #include "Web.h"
 #include "display.h"
+#include "sensors.h"
 
 
 
@@ -16,7 +17,6 @@ void manageScreen(void * parameter){
 		redrawScreen();
 		if (Working || (!Working && OnOff)){
 			displayStatus(OnOff);
-			// Serial.printf("Working = %d\n",Working);
 			refreshScreen();
 			vTaskDelay( pdMS_TO_TICKS(100));
 		} else {
@@ -25,9 +25,12 @@ void manageScreen(void * parameter){
 			vTaskDelay( pdMS_TO_TICKS(100));
 		}
 		if (DeepSleepNow){
-			vTaskDelay( pdMS_TO_TICKS(3000));
+			vTaskDelay( pdMS_TO_TICKS(300));
 			// enableDeepSleep();
 		}
+		Serial.printf("OnOff = %d\n",OnOff);
+		Serial.printf("Working = %d\n",Working);
+		Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
 	}
 }
 void setup_task() {
@@ -40,24 +43,24 @@ void setup_task() {
 		NULL,							// Task handle
 		1 								// force CPU 1
 	);
-	// xTaskCreatePinnedToCore(
-	// 	getSensorData,
-	// 	"Read sensor data and put on server.",   // Name of the task (for debugging)
-	// 	20000,            // Stack size (bytes)
-	// 	NULL,            // Parameter to pass
-	// 	5,               // Task priority
-	// 	NULL,             // Task handle
-	// 	1
-	// );
-	// xTaskCreatePinnedToCore(
-	// 	isWorking,
-	// 	"Toogle LD1 on working",    // Name of the task (for debugging)
-	// 	1000,             // Stack size (bytes)
-	// 	NULL,            // Parameter to pass
-	// 	5,               // Task priority
-	// 	NULL,             // Task handle
-	// 	0
-	// );
+	xTaskCreatePinnedToCore(
+		getSensorData,
+		"Read sensor data and put on server.",   // Name of the task (for debugging)
+		20000,								// Stack size (bytes)
+		NULL,								// Parameter to pass
+		5,									// Task priority
+		NULL,								// Task handle
+		0
+	);
+	xTaskCreatePinnedToCore(
+		heartPulse,
+		"Toogle LD1 on working",    // Name of the task (for debugging)
+		2000, 						// Stack size (bytes)
+		NULL,    				    // Parameter to pass
+		5,     				        // Task priority
+		NULL,						// Task handle
+		0
+	);
 	Serial.println("setup_task()");
 }
 
@@ -87,9 +90,6 @@ void setup() {
 	}
 
 	setup_Routing();
-	delay(2000);
-	Serial.print("DISPLAY ! ");
-	init_Screen();
 	setup_task();
 }
 

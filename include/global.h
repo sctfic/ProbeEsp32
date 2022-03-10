@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "SPIFFS.h"
 #include <WiFi.h>
+#include <iomanip>
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -43,7 +44,8 @@ class MEASURE {
 			return nlohmann::json::parse(jsonString, NULL, false, true).get<MEASURE>();
 		};
 		inline std::string toString(){
-			return std::to_string(Value) + Unit;
+			std::string s = std::to_string(Value);
+			return s.substr(0, s.find_first_of(".")+2) + Unit;
 		};
 	};
 class PROBE {

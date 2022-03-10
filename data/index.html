@@ -784,7 +784,7 @@
 			<!-- <input id="SSID" class="u-full-width required" placeholder="Connect to Network : SSID" name="SSID" type="text" value="" required pattern="|(.{3,32})"><br/> -->
 			<input id="PWD" class="u-full-width required" placeholder="PassWord for this network" name="PWD" type="text" value="" required pattern="|(.{0,64})"><br/>
 			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><br/>
-			<label class="dhcp"><input id="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
+			<label class="dhcp"><input id="DHCP" Name="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
 				<span class="ipFixe">
 					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.32" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>
 					<div class="row"><span class="two columns">MASK</span><input id="Mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="Mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><br/></div>

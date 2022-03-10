@@ -7,28 +7,31 @@
 
 
 bool check_WiFi_Available(){
+	// Serial.printf("\nWiFi.getMode()\n");
     static wifi_mode_t mode = WiFi.getMode();
     CurrentProbe.Network.Hostname       = WiFi.getHostname();
     CurrentProbe.Network.MAC            = WiFi.macAddress().c_str();
     CurrentProbe.Network.Strength       = MEASURE(WiFi.RSSI(), "dBm");
     if (mode == WIFI_MODE_STA){
+		// Serial.printf("WIFI_MODE_STA\n");
         CurrentProbe.Network.IP             = WiFi.localIP().toString().c_str();
         CurrentProbe.Network.Gateway        = WiFi.gatewayIP().toString().c_str();
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.subnetCIDR()).c_str() ;
         CurrentProbe.Network.SSID           = WiFi.SSID().c_str();
         CurrentProbe.Network.DNS            = WiFi.dnsIP().toString().c_str();
 	    WIFI_CONNECTED = !(WiFi.status() != WL_CONNECTED || (CurrentProbe.Network.IP == "0.0.0.0"));
+		return WIFI_CONNECTED;
     } else if (mode == WIFI_MODE_AP) {
+		// Serial.printf("WIFI_MODE_AP\n");
         CurrentProbe.Network.IP             = WiFi.softAPIP().toString().c_str();
         CurrentProbe.Network.SSID           = WiFi.softAPSSID().c_str();
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.softAPSubnetCIDR()).c_str() ;
         CurrentProbe.Network.Gateway        = "";
         CurrentProbe.Network.DNS            = WiFi.dnsIP().toString().c_str();
         // CurrentProbe.Network.Strength       = MEASURE(-120, "dBm");
-	    WIFI_CONNECTED = (CurrentProbe.Network.IP != "0.0.0.0");
+	    WIFI_CONNECTED = false;
+		return (CurrentProbe.Network.IP != "0.0.0.0");
     }
-    
-	return WIFI_CONNECTED;
 }
 bool initWiFi() {
 	if(CurrentProbe.Settings.SSID==""){
@@ -69,8 +72,9 @@ bool initWiFi() {
 		WiFi.setHostname(CurrentProbe.Settings.Hostname.c_str());
 			Serial.printf("Set Hostname: %s",WiFi.getHostname());
 	}
-
+	check_WiFi_Available();
 	// Activation Connexion wifi
+	Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
   	WiFi.begin(CurrentProbe.Settings.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
 
 	while (!check_WiFi_Available()) {

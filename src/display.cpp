@@ -166,13 +166,13 @@ void displayNetwork(){
 
 void displaySensor(){
 	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.printf("Temp:%.1f`C\n",CurrentProbe.Probe.Temperature.toString());
+	display.printf("Temp:%s",CurrentProbe.Probe.Temperature.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.printf("Press:%.1fhPa\n",CurrentProbe.Probe.Pressure.toString());
+	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.toString());
+	display.printf("Hum:%s",CurrentProbe.Probe.Humidity.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%.0fppm",CurrentProbe.Probe.CO2.toString());
+	display.printf("CO2:%s",CurrentProbe.Probe.CO2.toString().c_str());
 }
 void displayDeepSleep(){
 	if (CurrentProbe.Settings.DisplayDuringDeepSleep){
