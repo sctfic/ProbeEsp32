@@ -38,7 +38,7 @@ String readFile(fs::FS &fs, const char * path){
 
 	File file = fs.open(path);
 	if(!file || file.isDirectory()){
-		Serial.println("- failed to open file for reading");
+		Serial.println("> failed to open file for reading");
 		return String();
 	}
 	
@@ -47,8 +47,8 @@ String readFile(fs::FS &fs, const char * path){
 		fileContent = file.readStringUntil('\n');
 		break;     
 	}
-    Serial.println("File content :");
-    Serial.println(fileContent.c_str());
+    // Serial.println("File content :");
+    // Serial.println(fileContent.c_str());
 	return fileContent;
 }
 
@@ -57,13 +57,13 @@ void writeFile(fs::FS &fs, const char * path, const char * message){
 
     File file = fs.open(path, FILE_WRITE);
     if(!file){
-        Serial.println("- failed to open file for writing");
+        Serial.println("> failed to open file for writing");
         return;
     }
     if(file.print(message)){
-        Serial.println("- file written");
+        Serial.println("> file written");
     } else {
-        Serial.println("- frite failed");
+        Serial.println("> file write failed");
     }
 }
 void loadJsonSettings(const char *path){
@@ -71,7 +71,7 @@ void loadJsonSettings(const char *path){
 
 	if(SettingsJson.length() > 2 ){
 		if((SettingsJson[0]=='{' && SettingsJson[SettingsJson.length()-1]=='}') || (SettingsJson[0]=='[' && SettingsJson[SettingsJson.length()-1]==']')){
-			Serial.printf("Loading SettingsJson %i",SettingsJson.length());
+			Serial.printf("Loading SettingsJson [%i]\n",SettingsJson.length());
 			CurrentProbe.Settings = SETTINGS::fromJson(SettingsJson);
 			// Serial.println(CurrentProbe.Settings.toJson().c_str());
 		} else {

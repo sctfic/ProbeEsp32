@@ -57,7 +57,7 @@ bool initWiFi() {
 	if (!CurrentProbe.Settings.DHCP && CurrentProbe.Settings.IP != "" && CurrentProbe.Settings.Mask != ""){
 		// il y a une conf IPFixe
 		IP.fromString(CurrentProbe.Settings.IP.c_str());
-			Serial.printf("Set IPFixe: %s",CurrentProbe.Settings.IP.c_str());
+			// Serial.printf("Set IPFixe: %s",CurrentProbe.Settings.IP.c_str());
 		Mask.fromString(CurrentProbe.Settings.Mask.c_str());
 		Gateway.fromString(CurrentProbe.Settings.Gateway.c_str());
 		DNS1.fromString(CurrentProbe.Settings.DNS1.c_str());
@@ -70,11 +70,11 @@ bool initWiFi() {
 	
 	if (CurrentProbe.Settings.Hostname != ""){
 		WiFi.setHostname(CurrentProbe.Settings.Hostname.c_str());
-			Serial.printf("Set Hostname: %s",WiFi.getHostname());
+			// Serial.printf("Set Hostname: %s",WiFi.getHostname());
 	}
 	check_WiFi_Available();
 	// Activation Connexion wifi
-	Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
+	// Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
   	WiFi.begin(CurrentProbe.Settings.SSID.c_str(), CurrentProbe.Settings.PWD.c_str());
 
 	while (!check_WiFi_Available()) {

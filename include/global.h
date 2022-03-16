@@ -21,6 +21,10 @@ extern bool DeepSleepNow;
 extern bool Working;
 extern bool OnOff;
 extern bool WIFI_CONNECTED;
+extern bool BMP280_CONNECTED;
+extern bool BME280_CONNECTED;
+extern bool CO2_CONNECTED;
+
 extern const char * SettingsPath;
 
 
@@ -46,6 +50,10 @@ class MEASURE {
 		inline std::string toString(){
 			std::string s = std::to_string(Value);
 			return s.substr(0, s.find_first_of(".")+2) + Unit;
+			// char s[32];
+			// snprintf(s,32,"%.1f %s",Value,Unit);
+			// sprintf(s,"%.1f %s",Value,Unit);
+			// return s;
 		};
 	};
 class PROBE {
@@ -53,6 +61,8 @@ class PROBE {
 		MEASURE Temperature;
 		MEASURE Pressure;
 		MEASURE Humidity;
+		// MEASURE DewPoint;
+		// MEASURE BoilingPoint;
 		MEASURE CO2;
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(PROBE, Temperature, Pressure, Humidity, CO2)
 		//"{...}"" = maMesure.toJson();
@@ -121,6 +131,7 @@ class SETTINGS{
     public:
 		bool EnableDeepSleep;
 		bool DisplayDuringDeepSleep;
+		int MeasurementInterval;
 		std::string SrvDataBase2Post;
     	std::string SSID; //'MartinLopez',
     	std::string PWD; //'Wifi Key',
@@ -131,7 +142,7 @@ class SETTINGS{
     	std::string Gateway; //'192.168.1.1',
     	std::string DNS1; //'8.8.8.8',
     	std::string DNS2; //'8.8.4.4',
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,SrvDataBase2Post,SSID,PWD,Hostname,DHCP,IP,Mask,Gateway,DNS1,DNS2)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,SSID,PWD,Hostname,DHCP,IP,Mask,Gateway,DNS1,DNS2)
 		//"{...}" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;
@@ -162,3 +173,4 @@ class ESP32BOARD{
 	};
 
 extern ESP32BOARD CurrentProbe;
+int str2int(std::string s);

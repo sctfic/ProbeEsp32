@@ -19,23 +19,30 @@ void setup_Routing(){
 
 	// Web Server Root URL
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+		Working = true;
 		Serial.println(request->url());
 		request->send(SPIFFS, "/index.html", "text/html");
+		Working = false;
 	});
 	// display JSON of data
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+		Working = true;
 		Serial.println(request->url());
 		request->send(200, "application/json", CurrentProbe.toJson().c_str());
+		Working = false;
 	});
 	// remove conf
 	server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
+		Working = true;
 		Serial.println(request->url());
 		SPIFFS.remove(SettingsPath);
 		request->send(200, "application/json", "{\"reset\":\"\"}");
 		ESP.restart();
+		// Working = false;
 	});
 	// Scan available network
 	server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+		Working = true;
 		// WiFi.scanNetworks will return the number of networks found
 		int n = WiFi.scanNetworks();
 		String scan = "";
@@ -53,9 +60,11 @@ void setup_Routing(){
 			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" " : "*");
 		}
 		request->send(200, "application/json", ("["+scan+"]"));
+		Working = false;
 	});
 	// Save and apply new conf
 	server.on("/applySettings", HTTP_GET, [](AsyncWebServerRequest *request){
+		Working = true;
 		int paramsNr = request->params();
 		Serial.println(request->url());
 		Serial.println(paramsNr);
@@ -85,6 +94,8 @@ void setup_Routing(){
 		CurrentProbe.Settings.DNS1 				= request->arg("DNS1").c_str();
 		CurrentProbe.Settings.DNS2 				= request->arg("DNS2").c_str();
 		CurrentProbe.Settings.SrvDataBase2Post	= request->arg("SrvDataBase2Post").c_str();
+		CurrentProbe.Settings.MeasurementInterval	= str2int(request->arg("MeasurementInterval").c_str());
+		
 
 		for(int i=0;i<paramsNr;i++){
 			AsyncWebParameter* p = request->getParam(i);
@@ -101,30 +112,34 @@ void setup_Routing(){
 
 		delay(1000);
 		ESP.restart();
+		// Working = false;
 	});
     
     server.serveStatic("/", SPIFFS, "/");
     
     server.begin();
-	Serial.println("Web Route applyed ! ");
+	Serial.println("> Web Route applyed ! ");
 }
+
 
 bool uploadData(const char * data, const char * url) {
 	// Block until we are able to connect to the WiFi access point
 	if (WIFI_CONNECTED && DeepSleepNow == false) {
+		Working = true;
 
 		// Send request
 		httpClient.begin(Wclient, url);
-		Serial.printf("POST(JSON) to %s > ", url);
+		Serial.printf("+---> Upload(JSON) to %s > ", url);
 		httpClient.addHeader("Content-Type", "application/json");
 		int httpResponseCode = httpClient.POST(data);
 
 		// Read response
 		Serial.println(httpResponseCode);
-		Serial.println(httpClient.getString());
+		// Serial.println(httpClient.getString());
 
 		// Disconnect
 		httpClient.end();
+		Working = false;
 		return httpResponseCode == 201 ? true : false;
 	}
 	return false;

@@ -5,8 +5,8 @@
 #include "global.h"
 
 //OLED pins
-#define OLED_SDA 5
-#define OLED_SCL 4
+#define I2C_SDA 5
+#define I2C_SCL 4
 #define OLED_RST 15 // 16
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -39,13 +39,14 @@ const unsigned char logoNB [] PROGMEM = {
 void refreshScreen(){
     xSemaphoreTake( mutex, portMAX_DELAY );
     display.display();
+	Serial.println("# refreshScreen()! ###############################################################################");
     xSemaphoreGive( mutex );
 }
 void init_Screen (){
   Serial.println("Enable OLED screen :");
   //initialize OLED
   pinMode(OLED_RST, OUTPUT);
-  Wire.begin(OLED_SDA, OLED_SCL);
+  Wire.begin(I2C_SDA, I2C_SCL);
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
 	Serial.println(F("SSD1306 allocation failed"));
 	for(;;); // Don't proceed, loop forever
@@ -163,12 +164,18 @@ void displayNetwork(){
 	display.print(CurrentProbe.Network.IP.c_str());
 	displaySignal(CurrentProbe.Network.Strength.Value);
 }
-
 void displaySensor(){
 	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.printf("Temp:%s",CurrentProbe.Probe.Temperature.toString().c_str());
+	display.printf("Temp:%.1f",CurrentProbe.Probe.Temperature.Value);
+	// Serial.printf("Temp:%s\n",CurrentProbe.Probe.Temperature.toString().c_str());
+	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+2);
+	display.write(248);
+	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+4);
+
+	display.write(67);
 	display.setCursor(30,SCREEN_BLUE_0+4+9);
 	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
+	// Serial.printf("Press:%s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
 	display.printf("Hum:%s",CurrentProbe.Probe.Humidity.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+27);
@@ -189,9 +196,7 @@ void displayDeepSleep(){
 	} else {
 		display.clearDisplay();
 	}
-	xSemaphoreTake( mutex, portMAX_DELAY );
-    display.display();
-	xSemaphoreGive( mutex );
+	refreshScreen();
 }
 void redrawScreen(){
     display.clearDisplay();
