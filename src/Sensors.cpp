@@ -7,11 +7,7 @@
 // #include <Adafruit_BME280.h>
 #include <Adafruit_BMP280.h>
 
-// define the wiring settings for I2C interface connection
-// #define I2C_SDA    5 // 21 // SCK
-// #define I2C_SCL    4 // 22
 Adafruit_BMP280 bmp; // I2C
-
 
 // PINs
 #define BATTERY_PIN 35
@@ -37,7 +33,7 @@ void heartPulse(void * parameter){
 	// int pulse[] = {3,4,47,78,112,144,166,180,179,150,98,44,118,169,210,239,254,255,224,137,58,44,36,33,29,26,22,18,15,11,7,4};
 
 	// wave of sin()
-	int pulse[] = {0,1,5,14,27,45,65,89,114,139,164,188,209,227,241,250,255,255,249,239,224,206,184,160,135,109,85,62,41,25,12,4,1,0};
+	int pulse[] = {0,1,5,14,27,45,65,89,114,139,164,188,209,227,241,250,255,255,249,239,224,206,184,160,135,109,85,62,41,25,12,4,1,0,0,0,0,0,0,0,0,0};
 	int N = sizeof(pulse) / sizeof(pulse[0]);
 
 	for (;;) {
@@ -46,12 +42,11 @@ void heartPulse(void * parameter){
 			if ((x%3) == 0){
 				OnOff = !OnOff;
 			}
-			vTaskDelay(50-Working);
+			vTaskDelay(50-Working*30);
 		}
-		vTaskDelay(250);
+		// vTaskDelay(250);
 	}
 }
-
 double getBatteryCapacity(double VBat, double VPower){
 	//  equation d'une Li-Ion sous faible charge a 20C
 	if (VPower > VBat && VPower > 4.2){
@@ -88,16 +83,21 @@ void initBMP280(){
 						Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
 						Adafruit_BMP280::FILTER_X16,      /* Filtering. */
 						Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
-		BMP280_CONNECTED = true;
+		i2cbus.BMP280 = true;
 	}
+    xSemaphoreGive( mutex );
+}
+void initBME280(){
+	xSemaphoreTake( mutex, portMAX_DELAY );
+
     xSemaphoreGive( mutex );
 }
 void readBMP280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
 	Serial.println("+---> readBMP280()");
 	if (bmp.takeForcedMeasurement()) {
-		CurrentProbe.Probe.Temperature = MEASURE( bmp.readTemperature(), "°C"); // bme.readTemperature();
-		CurrentProbe.Probe.Pressure = MEASURE( bmp.readPressure()/100, "hPa"); // bme.readPressure() / 100;
+		CurrentProbe.Probe.Temperature = MEASURE( bmp.readTemperature()); // bme.readTemperature();
+		CurrentProbe.Probe.Pressure = MEASURE(bmp.readPressure()); // bme.readPressure() / 100;
     	Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
     	Serial.printf("|   +---> Pressure : %s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	} else {
@@ -123,21 +123,21 @@ void getSensorData(void * parameter) {
 	for (;;) {
 		Serial.println("> getSensorData() ===============================================================================");
 		Working = true;
-		CurrentProbe.Probe.CO2 = MEASURE( rand() % 100 + 415, "ppm");
-		CurrentProbe.Probe.Humidity = MEASURE( rand() % 40 + 30, "ppm");
-		CurrentProbe.Energy.PowerSupply.Voltage = MEASURE( getPowerVoltage(), "V");
-		CurrentProbe.Energy.Battery.Voltage =  MEASURE( getBatteryVoltage(), "V");
-		CurrentProbe.Energy.Battery.Capacity = MEASURE( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Value, CurrentProbe.Energy.PowerSupply.Voltage.Value), "%");
-		if(BMP280_CONNECTED){
+		CurrentProbe.Probe.CO2 = MEASURE( rand() % 100 + 415);
+		CurrentProbe.Probe.Humidity = MEASURE( rand() % 40 + 30);
+		CurrentProbe.Energy.PowerSupply.Voltage = MEASURE( getPowerVoltage());
+		CurrentProbe.Energy.Battery.Voltage =  MEASURE( getBatteryVoltage());
+		CurrentProbe.Energy.Battery.Capacity = MEASURE( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Value(), CurrentProbe.Energy.PowerSupply.Voltage.Value()));
+		if(i2cbus.BMP280){
 			readBMP280();
 		} else {Serial.println("+---> Missing BMP280 sensor!");}
-		if(BME280_CONNECTED){
+		if(i2cbus.BME280){
 			readBME280();
-		// } else {Serial.println("+---> Missing BME280 sensor!");
+		} else {Serial.println("+---> Missing BME280 sensor!");
 		}
-		if(CO2_CONNECTED){
+		if(i2cbus.CO2){
 			readCO2();
-		// } else {Serial.println("+---> Missing CO2 sensor!");
+		} else {Serial.println("+---> Missing CO2 sensor!");
 		}
 		if (WIFI_CONNECTED) {
 			// read CO2 SPi or I2C
@@ -149,7 +149,12 @@ void getSensorData(void * parameter) {
 			}
 			Working = false;
 		} else {
-			vTaskDelay( 200 );
+			int i = 600; // 600 = 1 min
+			while (!WIFI_CONNECTED && i>0) {
+				vTaskDelay( 100 );
+				i--;
+			}
+			
 		}
 	}
 }

@@ -16,20 +16,27 @@
 
 
 void setup_Routing(){
-
 	// Web Server Root URL
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-		Working = true;
+		Transfert = true;
 		Serial.println(request->url());
 		request->send(SPIFFS, "/index.html", "text/html");
-		Working = false;
+		delay(1000);
+		Transfert = false;
+	});
+	// Web Server Sensor URL
+	server.on("/Sensors", HTTP_GET, [](AsyncWebServerRequest *request){
+		Transfert = true;
+		Serial.println(request->url());
+		request->send(SPIFFS, "/Sensors.html", "text/html");
+		Transfert = false;
 	});
 	// display JSON of data
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
-		Working = true;
+		Transfert = true;
 		Serial.println(request->url());
 		request->send(200, "application/json", CurrentProbe.toJson().c_str());
-		Working = false;
+		Transfert = false;
 	});
 	// remove conf
 	server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -59,12 +66,14 @@ void setup_Routing(){
 			Serial.print(")");
 			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" " : "*");
 		}
+		Transfert = true;
 		request->send(200, "application/json", ("["+scan+"]"));
 		Working = false;
+		Transfert = false;
 	});
 	// Save and apply new conf
 	server.on("/applySettings", HTTP_GET, [](AsyncWebServerRequest *request){
-		Working = true;
+		Transfert = true;
 		int paramsNr = request->params();
 		Serial.println(request->url());
 		Serial.println(paramsNr);
@@ -81,18 +90,18 @@ void setup_Routing(){
 			CurrentProbe.Settings.EnableDeepSleep = false;
 		}
 		if (request->arg("DHCP") == "on") {
-			CurrentProbe.Settings.DHCP 			= true;
+			CurrentProbe.Settings.Lan.DHCP 			= true;
 		} else {
-			CurrentProbe.Settings.DHCP 			= false;
+			CurrentProbe.Settings.Lan.DHCP 			= false;
 		}
-		CurrentProbe.Settings.Hostname 			= request->arg("Hostname").c_str();
-		CurrentProbe.Settings.SSID 				= request->arg("SSID").c_str();
-		CurrentProbe.Settings.PWD 				= request->arg("PWD").c_str();
-		CurrentProbe.Settings.IP 				= request->arg("IP").c_str();
-		CurrentProbe.Settings.Mask 				= request->arg("Mask").c_str();
-		CurrentProbe.Settings.Gateway 			= request->arg("Gateway").c_str();
-		CurrentProbe.Settings.DNS1 				= request->arg("DNS1").c_str();
-		CurrentProbe.Settings.DNS2 				= request->arg("DNS2").c_str();
+		CurrentProbe.Settings.Lan.Hostname 			= request->arg("Hostname").c_str();
+		CurrentProbe.Settings.Lan.SSID 				= request->arg("SSID").c_str();
+		CurrentProbe.Settings.Lan.PWD 				= request->arg("PWD").c_str();
+		CurrentProbe.Settings.Lan.IP 				= request->arg("IP").c_str();
+		CurrentProbe.Settings.Lan.Mask 				= request->arg("Mask").c_str();
+		CurrentProbe.Settings.Lan.Gateway 			= request->arg("Gateway").c_str();
+		CurrentProbe.Settings.Lan.DNS1 				= request->arg("DNS1").c_str();
+		CurrentProbe.Settings.Lan.DNS2 				= request->arg("DNS2").c_str();
 		CurrentProbe.Settings.SrvDataBase2Post	= request->arg("SrvDataBase2Post").c_str();
 		CurrentProbe.Settings.MeasurementInterval	= str2int(request->arg("MeasurementInterval").c_str());
 		
@@ -110,9 +119,67 @@ void setup_Routing(){
 
 		request->send(200, "application/json", data);
 
+		Transfert = false;
 		delay(1000);
 		ESP.restart();
-		// Working = false;
+	});
+	// Save and apply new conf
+	server.on("/applySensors", HTTP_GET, [](AsyncWebServerRequest *request){
+		Transfert = true;
+		int paramsNr = request->params();
+		Serial.println(request->url());
+		Serial.println(paramsNr);
+		Serial.println(request->arg("EnableDeepSleep"));
+		Serial.println(request->args());
+		
+		CurrentProbe.Settings.Probe.Temperature.Def	= {
+			std::stod(request->arg("TemperatureCoef").c_str()),
+			std::stod(request->arg("TemperatureOffset").c_str()),
+			request->arg("TemperatureUnit").c_str()
+		};
+		CurrentProbe.Settings.Probe.Pressure.Def	= {
+			std::stod(request->arg("PressureCoef").c_str()),
+			std::stod(request->arg("PressureOffset").c_str()),
+			request->arg("PressureUnit").c_str()
+		};
+		CurrentProbe.Settings.Probe.Humidity.Def	= {
+			std::stod(request->arg("HumidityCoef").c_str()),
+			std::stod(request->arg("HumidityOffset").c_str()),
+			request->arg("HumidityUnit").c_str()
+		};
+		CurrentProbe.Settings.Probe.CO2.Def	= {
+			std::stod(request->arg("CO2Coef").c_str()),
+			std::stod(request->arg("CO2Offset").c_str()),
+			request->arg("CO2Unit").c_str()
+		};
+		CurrentProbe.Settings.Probe.LUX.Def	= {
+			std::stod(request->arg("LUXCoef").c_str()),
+			std::stod(request->arg("LUXOffset").c_str()),
+			request->arg("LUXUnit").c_str()
+		};
+		CurrentProbe.Settings.Probe.UV.Def	= {
+			std::stod(request->arg("UVCoef").c_str()),
+			std::stod(request->arg("UVOffset").c_str()),
+			request->arg("UVUnit").c_str()
+		};
+		CurrentProbe.Probe	= CurrentProbe.Settings.Probe;
+
+		
+
+		for(int i=0;i<paramsNr;i++){
+			AsyncWebParameter* p = request->getParam(i);
+			Serial.print(p->name());
+			Serial.print(" = ");
+			Serial.println(p->value());
+		}
+		const char * data = CurrentProbe.Settings.toJson().c_str();
+		// request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
+		writeFile(SPIFFS, SettingsPath, data);
+		Serial.println(readFile(SPIFFS, SettingsPath).c_str());
+
+		request->send(200, "application/json", data);
+
+		Transfert = false;
 	});
     
     server.serveStatic("/", SPIFFS, "/");

@@ -11,15 +11,19 @@
 
 bool DeepSleepNow = false;
 bool Working = true;
+bool Transfert = false;
 bool OnOff = true;
 bool WIFI_CONNECTED = false;
-bool BMP280_CONNECTED = false;
-bool BME280_CONNECTED = false;
-bool CO2_CONNECTED = false;
+// bool BMP280_CONNECTED = false;
+// bool BME280_CONNECTED = false;
+// bool CO2_CONNECTED = false;
+// bool LUX_CONNECTED = false;
+// bool UV_CONNECTED = false;
 
 const char * SettingsPath = "/Settings.json";
 
 ESP32BOARD CurrentProbe;
+I2CBUS i2cbus = {4,5,15,false,false,false,false,false};
 
 int str2int(std::string s){
     int i = 0;

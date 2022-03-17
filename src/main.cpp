@@ -7,11 +7,17 @@
 #include "Web.h"
 #include "display.h"
 #include "sensors.h"
+// #include <SoftwareSerial.h>                               //  Remove if using HardwareSerial or non-uno compatabile device    
 
 void enableDeepSleep(){
-	Serial.println("GO deep_sleep_start() -----------------------------------------------------");
-	displayDeepSleep();
 	if (CurrentProbe.Settings.EnableDeepSleep){
+		Serial.printf("GO deep_sleep_start(%i) ",CurrentProbe.Settings.MeasurementInterval);
+		while (Working || Transfert){
+			vTaskDelay(100);
+			Serial.print("-");
+		}
+		Serial.println(" !");
+		displayDeepSleep();
 		esp_deep_sleep_start();
 	}
 }
@@ -30,12 +36,15 @@ void print_wakeup_reason(){
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
   }
 }
-
 void manageScreen(void * parameter){
 	init_Screen();
 	for (;;) {
 		redrawScreen();
-		Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
+
+		// Serial.printf("OnOff = %d - ",OnOff);
+		// Serial.printf("Working = %d - ",Working);
+		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
+		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
 
 		if (Working || (!Working && OnOff)){
 			displayStatus(OnOff);
@@ -45,15 +54,11 @@ void manageScreen(void * parameter){
 			refreshScreen();
 			vTaskDelay(300);
 		}
-		if (DeepSleepNow && !Working){
+		if (DeepSleepNow){
 			// vTaskDelay( 3000);
 			enableDeepSleep();
 		}
 		delay(1000);
-
-		Serial.printf("OnOff = %d - ",OnOff);
-		Serial.printf("Working = %d - ",Working);
-		Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
 	}
 }
 void setup_displayTask() {
@@ -68,6 +73,13 @@ void setup_displayTask() {
 	);
 }
 void setup_sensorTask() {
+
+	CurrentProbe.Network.Strength.Def = {1,0,std::string("dBm")};
+	CurrentProbe.Energy.Battery.Capacity.Def = {1,0,std::string("%")};
+	CurrentProbe.Energy.Battery.Voltage.Def = {1,0,std::string("V")};
+	CurrentProbe.Energy.PowerSupply.Current.Def = {1,0,std::string("A")};
+	CurrentProbe.Energy.Battery.Voltage.Def = {1,0,std::string("V")};
+
 	xTaskCreatePinnedToCore(
 		getSensorData,
 		"Read sensor data and put on server.",	// Name of the task (for debugging)
@@ -91,24 +103,22 @@ void setup_hearthTask() {
 }
 
 
-
 void setup() {
 	// Serial port for debugging purposes
 	Serial.begin(115200);
+	// i2cbus = {4,5,15,false,false,false,false,false};
 	print_wakeup_reason();
-	esp_sleep_enable_timer_wakeup((CurrentProbe.Settings.MeasurementInterval-2) * 1000000);
-	delay(1000);
-
 	setup_hearthTask();
-
 	mutex = xSemaphoreCreateMutex();
 	setup_displayTask();
 	delay(100);
 
-	setup_sensorTask();
+	// setup_sensorTask();
 
 	initSPIFFS();
 	loadJsonSettings(SettingsPath);
+	esp_sleep_enable_timer_wakeup((CurrentProbe.Settings.MeasurementInterval-2) * 1000000);
+
 	if (!initWiFi()){
 		initAccessPoint();
   	}
@@ -154,4 +164,6 @@ void loop() {
 		Working = false;
 		delay(10000);
 	}
+	
+	// delay(1000);
 }

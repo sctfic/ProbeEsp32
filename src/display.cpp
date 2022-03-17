@@ -5,14 +5,14 @@
 #include "global.h"
 
 //OLED pins
-#define I2C_SDA 5
-#define I2C_SCL 4
-#define OLED_RST 15 // 16
+// #define I2C_SDA 5
+// #define I2C_SCL 4
+// #define OLED_RST 15 // 16
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define SCREEN_BLUE_0 16 // OLED blue area start
 
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST); // , 120000UL, 120000UL
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, i2cbus.RST); // , 120000UL, 120000UL
 
  // 'logoNB', 23x48px
 const unsigned char logoNB [] PROGMEM = {
@@ -39,14 +39,14 @@ const unsigned char logoNB [] PROGMEM = {
 void refreshScreen(){
     xSemaphoreTake( mutex, portMAX_DELAY );
     display.display();
-	Serial.println("# refreshScreen()! ###############################################################################");
+	// Serial.println("# refreshScreen()! ############################################################################### ");
     xSemaphoreGive( mutex );
 }
 void init_Screen (){
   Serial.println("Enable OLED screen :");
   //initialize OLED
-  pinMode(OLED_RST, OUTPUT);
-  Wire.begin(I2C_SDA, I2C_SCL);
+  pinMode(i2cbus.OLED, OUTPUT);
+  Wire.begin(i2cbus.SDA, i2cbus.SCL);
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) { // Address 0x3C for 128x32
 	Serial.println(F("SSD1306 allocation failed"));
 	for(;;); // Don't proceed, loop forever
@@ -81,7 +81,7 @@ void displayStatus(bool color){
 	int x = 113;
 	int y = 53;
 	display.fillRect(x, y, 28, 11, BLACK);
-	if (Working){
+	if (Transfert){
 		// Left Top arrow
 		display.drawRect(x+1, y+2, 9, 3, WHITE);
 		display.drawPixel(x, y+3, WHITE);
@@ -162,24 +162,23 @@ void displayNetwork(){
 	display.setCursor(0,0);
 	display.println(CurrentProbe.Network.SSID.c_str());
 	display.print(CurrentProbe.Network.IP.c_str());
-	displaySignal(CurrentProbe.Network.Strength.Value);
+	displaySignal(CurrentProbe.Network.Strength.Value());
 }
 void displaySensor(){
 	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.printf("Temp:%.1f",CurrentProbe.Probe.Temperature.Value);
+	display.printf("Temp:%.1f",CurrentProbe.Probe.Temperature.Raw);
 	// Serial.printf("Temp:%s\n",CurrentProbe.Probe.Temperature.toString().c_str());
 	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+2);
 	display.write(248);
 	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+4);
-
 	display.write(67);
 	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
+	display.printf("Press:%.1fhPa",CurrentProbe.Probe.Pressure.Raw);
 	// Serial.printf("Press:%s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.printf("Hum:%s",CurrentProbe.Probe.Humidity.toString().c_str());
+	display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.Raw);
 	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%s",CurrentProbe.Probe.CO2.toString().c_str());
+	display.printf("CO2:%.1fppm",CurrentProbe.Probe.CO2.Raw);
 }
 void displayDeepSleep(){
 	if (CurrentProbe.Settings.DisplayDuringDeepSleep){
@@ -201,7 +200,7 @@ void displayDeepSleep(){
 void redrawScreen(){
     display.clearDisplay();
     displayNetwork();
-    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value);
+    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value());
     displaySensor();
     display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
 }

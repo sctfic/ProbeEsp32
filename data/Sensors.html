@@ -778,51 +778,65 @@
 				<div class="u-max-full-width">
 					<span class="row">
 						<h5 class="nine columns hero-heading" style='text-shadow: 0 0 7px rgba(42,88,141, 1);'>Settings ESP32</h5>
-						<a class="three columns button" href="/Sensors">Config Sensors</a>
+						<a class="three columns button" href="/">Config Network</a>
 						<a class="three columns button" href="/data">View Data {Json}</a>
 					</span>
+<form action='./applySensors' method="GET" enctype="text/plain">
+	<div class="row"><span class="two columns">Temperature</span>
+		<input id="TemperatureCoef" name="TemperatureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="TemperatureOffset" name="TemperatureOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="TemperatureUnit" name="TemperatureUnit" class="four columns" placeholder="Unite de mesure Temperature" type="text" value="K" required pattern="^|"> -->
+		<select id="TemperatureUnit" class="two columns" name="TemperatureUnit" size="1" required>
+			<option value="K">Kelvin (SI)</option>
+			<option value="°C">Celcius</option>
+			<option value="°F">Fahrenheit</option>
+		</select>
+	<span></span></div>
+	<div class="row"><span class="two columns">Pressure</span>
+		<input id="PressureCoef" name="PressureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="0.01" required pattern="^|">
+		<input id="PressureOffset" name="PressureOffset" class="four columns" placeholder="" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="PressureUnit" name="PressureUnit" class="four columns" placeholder="Unite de mesure pression atmospherique" type="text" value="hPa" required pattern="^|"> -->
+		<select id="PressureUnit" class="two columns" name="PressureUnit" size="1" required>
+			<option value="Pa">Pascal (SI)</option>
+			<option value="hPa">hPa</option>
+			<option value="Bar">Bar</option>
+		</select>
+	<span></span></div>
+	<div class="row"><span class="two columns">Humidity</span>
+		<input id="HumidityCoef" name="HumidityCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="HumidityOffset" name="HumidityOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="HumidityUnit" name="HumidityUnit" class="four columns" placeholder="Unite de mesure Humidite" type="text" value="%" required pattern="^|"> -->
+		<select id="HumidityUnit" class="two columns" name="HumidityUnit" size="1" required>
+			<option value="%">%</option>
+		</select>	<span></span></div>
+	<div class="row"><span class="two columns">CO2</span>
+		<input id="CO2Coef" name="CO2Coef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="CO2Offset" name="CO2Offset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="CO2Unit" name="CO2Unit" class="four columns" placeholder="Unite de mesure CO2" type="text" value="ppm" required pattern="^|"> -->
+		<select id="CO2Unit" class="two columns" name="CO2Unit" size="1" required>
+			<option value="ppm">ppm</option>
+			<option value="cm³/m³">cm³/m³</option>
+		</select>
+	<span></span></div>
+	<div class="row"><span class="two columns">LUX</span>
+		<input id="LUXCoef" name="LUXCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="LUXOffset" name="LUXOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="LUXUnit" name="LUXUnit" class="four columns" placeholder="Unite de mesure lumineuse" type="text" value="lux" required pattern="^|"> -->
+		<select id="LUXUnit" class="two columns" name="LUXUnit" size="1" required>
+			<option value="lux">lux</option>
+			<option value="lm/m²">lm/m²</option>
+		</select>
+	<span></span></div>
+	<div class="row"><span class="two columns">UV</span>
+		<input id="UVCoef" name="UVCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="UVOffset" name="UVOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="UVUnit" name="UVUnit" class="four columns" placeholder="Unite de mesure UV" type="text" value="index" required pattern="^|"> -->
+		<select id="UVUnit" class="two columns" name="UVUnit" size="1" required>
+			<option value="index">UV index</option>
+			<option value="w/m²">watt/m²</option>
+		</select>
+		<span></span></div>
 
-<form action='./applySettings' method="GET" enctype="text/plain">
-	<table class="u-full-width"><tbody>
-		<tr><td>
-			<select id="SSID" class="u-full-width required" name="SSID" size="1" required="">
-				<option value="loading">loading...</option>
-			</select>
-			<!-- <input id="SSID" class="u-full-width required" placeholder="Connect to Network : SSID" name="SSID" type="text" value="" required pattern="|(.{3,32})"><br/> -->
-			<input id="PWD" class="u-full-width required" placeholder="PassWord for this network" name="PWD" type="text" value="" required pattern="|(.{0,64})"><span></span><br/>
-			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><span></span><br/>
-			<label class="dhcp"><input id="DHCP" Name="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
-				<span class="ipFixe">
-					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.xxx" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
-					<div class="row"><span class="two columns">MASK</span><input id="Mask" class="ten columns" placeholder="Mask (Ex: 255.255.255.0)" name="Mask" type="text" value="255.255.255.0" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
-					<div class="row"><span class="two columns">GateWay</span><input id="Gateway" class="ten columns" placeholder="GateWay (Ex: 192.168.1.1)" name="Gateway" type="text" value="192.168.1.1" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
-					<div class="row"><span class="two columns">DNS1</span><input id="DNS1" class="ten columns required" placeholder="DNS1 (Ex:8.8.8.8)" name="DNS1" type="text" value="8.8.8.8" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
-					<div class="row"><span class="two columns">DNS2</span><input id="DNS2" class="ten columns required" placeholder="DNS2 (Ex:8.8.4.4)" name="DNS2" type="text" value="8.8.4.4" required pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span></div>
-				</span>
-			</label>
-			<input id="SrvDataBase2Post" class="u-full-width required" placeholder="Server DataBase URL for save Data" name="SrvDataBase2Post" type="text" value="http://rpimaster/AddProbeData" required pattern="|(.{3,256})"><span></span><br/>
-			<select id="MeasurementInterval" class="u-full-width required" name="MeasurementInterval" size="1" required>
-				<option value="10">10 sec</option>
-				<option value="30">30 sec</option>
-				<option value="60">60 sec</option>
-				<option value="120">2 min</option>
-				<option value="300">5 min</option>
-				<option value="600">10 min</option>
-				<option value="900">15 min</option>
-				<option value="1800">30 min</option>
-			</select>
-		</td></tr>
-		<tr><td>
-			<label class="deepSleep"><input id="EnableDeepSleep" name="EnableDeepSleep" type="checkbox" onchange="toogleDisplay(this)"/>Deep Sleep (Power Saving)
-				<span class="row">
-					<span class="two columns"></span>
-					<label class="ten columns" for="DisplayDuringDeepSleep">
-						<input id="DisplayDuringDeepSleep" name="DisplayDuringDeepSleep" type="checkbox"/>force enable Screen during deepSleep
-					</label>
-				</span>
-			</label>
-		</td></tr>
-	</tbody></table>
 	<div class="u-max-full-width">
 		<input class="u-full-width button-primary" type="submit" value="Apply Settings">
 	</div>
@@ -833,25 +847,6 @@
 		</div>
 	</body>
 	<script>
-		function toogleIpFixe(input){
-			document.getElementById("IP").disabled = input.checked;
-			document.getElementById("Mask").disabled = input.checked;
-			document.getElementById("Gateway").disabled = input.checked;
-			document.getElementById("DNS1").disabled = input.checked;
-			document.getElementById("DNS2").disabled = input.checked;
-		}
-		function toogleDisplay(input){
-			document.getElementById("DisplayDuringDeepSleep").disabled = !input.checked;
-		}
-		function refreshSSID(SSID){
-			document.getElementById('SSID').innerHTML = "";
-			SSID.forEach(function(element) {
-				opt = document.createElement("option");
-				opt.innerHTML = element;
-				opt.value = element;
-				document.getElementById("SSID").appendChild(opt);
-			 })
-		}
 		function ajax(url,callback){
 			var xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = callback
@@ -862,27 +857,25 @@
 			if (this.readyState == 4 && this.status == 200) {
 				var Settings = JSON.parse(this.responseText).Settings;
 				console.log(Settings);
-				document.getElementById("EnableDeepSleep").checked = Settings.EnableDeepSleep;
-				document.getElementById("DisplayDuringDeepSleep").checked = Settings.DisplayDuringDeepSleep;
-				document.getElementById("SSID").value = Settings.Lan.SSID;
-				document.getElementById("PWD").value = Settings.Lan.PWD;
-				document.getElementById("Hostname").value = Settings.Lan.Hostname;
-				document.getElementById("DHCP").checked = Settings.Lan.DHCP;
-				document.getElementById("IP").value = Settings.Lan.IP;
-				document.getElementById("Mask").value = Settings.Lan.Mask;
-				document.getElementById("Gateway").value = Settings.Lan.Gateway;
-				document.getElementById("DNS1").value = Settings.Lan.DNS1;
-				document.getElementById("DNS2").value = Settings.Lan.DNS2;
-				document.getElementById("SrvDataBase2Post").value = Settings.SrvDataBase2Post;
-				document.getElementById("MeasurementInterval").value = Settings.MeasurementInterval;
+				document.getElementById("TemperatureCoef").value	= Settings.Probe.Temperature.Def.Coef
+				document.getElementById("TemperatureOffset").value	= Settings.Probe.Temperature.Def.Offset
+				document.getElementById("TemperatureUnit").value	= Settings.Probe.Temperature.Def.Unit
+				document.getElementById("PressureCoef").value		= Settings.Probe.Pressure.Def.Coef
+				document.getElementById("PressureOffset").value		= Settings.Probe.Pressure.Def.Offset
+				document.getElementById("PressureUnit").value		= Settings.Probe.Pressure.Def.Unit
+				document.getElementById("HumidityCoef").value		= Settings.Probe.Humidity.Def.Coef
+				document.getElementById("HumidityOffset").value		= Settings.Probe.Humidity.Def.Offset
+				document.getElementById("HumidityUnit").value		= Settings.Probe.Humidity.Def.Unit
+				document.getElementById("CO2Coef").value			= Settings.Probe.CO2.Def.Coef
+				document.getElementById("CO2Offset").value			= Settings.Probe.CO2.Def.Offset
+				document.getElementById("CO2Unit").value			= Settings.Probe.CO2.Def.Unit
+				document.getElementById("LUXCoef").value			= Settings.Probe.LUX.Def.Coef
+				document.getElementById("LUXOffset").value			= Settings.Probe.LUX.Def.Offset
+				document.getElementById("LUXUnit").value			= Settings.Probe.LUX.Def.Unit
+				document.getElementById("UVCoef").value				= Settings.Probe.UV.Def.Coef
+				document.getElementById("UVOffset").value			= Settings.Probe.UV.Def.Offset
+				document.getElementById("UVUnit").value				= Settings.Probe.UV.Def.Unit
 			}
 		});
-		ajax('/scan',function() {
-				if (this.readyState == 4 && this.status == 200) {
-					var SSID = JSON.parse(this.responseText);
-					console.log(SSID);
-					refreshSSID(SSID);
-				}
-			});
 	</script>
 </html>
