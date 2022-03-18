@@ -173,12 +173,14 @@ void displaySensor(){
 	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+4);
 	display.write(67);
 	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.printf("Press:%.1fhPa",CurrentProbe.Probe.Pressure.Raw);
+	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
 	// Serial.printf("Press:%s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
 	display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.Raw);
 	display.setCursor(30,SCREEN_BLUE_0+4+27);
 	display.printf("CO2:%.1fppm",CurrentProbe.Probe.CO2.Raw);
+	display.setCursor(30,SCREEN_BLUE_0+4+36);
+	display.printf("VBat:%.2fV",CurrentProbe.Energy.Battery.Voltage.Raw);
 }
 void displayDeepSleep(){
 	if (CurrentProbe.Settings.DisplayDuringDeepSleep){

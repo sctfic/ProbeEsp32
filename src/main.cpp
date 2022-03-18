@@ -8,6 +8,9 @@
 #include "display.h"
 #include "sensors.h"
 // #include <SoftwareSerial.h>                               //  Remove if using HardwareSerial or non-uno compatabile device    
+#include "Adafruit_VEML7700.h"
+
+Adafruit_VEML7700 veml = Adafruit_VEML7700();
 
 void enableDeepSleep(){
 	if (CurrentProbe.Settings.EnableDeepSleep){
@@ -78,7 +81,7 @@ void setup_sensorTask() {
 	CurrentProbe.Energy.Battery.Capacity.Def = {1,0,std::string("%")};
 	CurrentProbe.Energy.Battery.Voltage.Def = {1,0,std::string("V")};
 	CurrentProbe.Energy.PowerSupply.Current.Def = {1,0,std::string("A")};
-	CurrentProbe.Energy.Battery.Voltage.Def = {1,0,std::string("V")};
+	CurrentProbe.Energy.PowerSupply.Voltage.Def = {1,0,std::string("V")};
 
 	xTaskCreatePinnedToCore(
 		getSensorData,
@@ -113,7 +116,7 @@ void setup() {
 	setup_displayTask();
 	delay(100);
 
-	// setup_sensorTask();
+	setup_sensorTask();
 
 	initSPIFFS();
 	loadJsonSettings(SettingsPath);
@@ -140,6 +143,43 @@ void setup() {
 		Serial.println(CurrentProbe.Network.Gateway.c_str());
 	}
 	setup_Routing();
+
+
+	  if (!veml.begin()) {
+    Serial.println("Sensor not found");
+    while (1);
+  }
+  Serial.println("Sensor found");
+
+  veml.setGain(VEML7700_GAIN_1);
+  veml.setIntegrationTime(VEML7700_IT_800MS);
+
+  Serial.print(F("Gain: "));
+  switch (veml.getGain()) {
+    case VEML7700_GAIN_1: Serial.println("1"); break;
+    case VEML7700_GAIN_2: Serial.println("2"); break;
+    case VEML7700_GAIN_1_4: Serial.println("1/4"); break;
+    case VEML7700_GAIN_1_8: Serial.println("1/8"); break;
+  }
+
+  Serial.print(F("Integration Time (ms): "));
+  switch (veml.getIntegrationTime()) {
+    case VEML7700_IT_25MS: Serial.println("25"); break;
+    case VEML7700_IT_50MS: Serial.println("50"); break;
+    case VEML7700_IT_100MS: Serial.println("100"); break;
+    case VEML7700_IT_200MS: Serial.println("200"); break;
+    case VEML7700_IT_400MS: Serial.println("400"); break;
+    case VEML7700_IT_800MS: Serial.println("800"); break;
+  }
+
+  //veml.powerSaveEnable(true);
+  //veml.setPowerSaveMode(VEML7700_POWERSAVE_MODE4);
+
+  veml.setLowThreshold(10000); //veml.readALS() value for event event
+  veml.setHighThreshold(20000); //veml.readALS() value for event event
+  veml.interruptEnable(true);
+  veml.setGain(VEML7700_GAIN_1_4);
+  veml.setIntegrationTime(VEML7700_IT_100MS);
 }
 
 void loop() {
@@ -164,6 +204,22 @@ void loop() {
 		Working = false;
 		delay(10000);
 	}
-	
-	// delay(1000);
+	// Serial.print("+");
+	delay(1000);
+  Serial.print("Lux: "); Serial.println(veml.readLux());
+  Serial.print("White: "); Serial.println(veml.readWhite());
+  Serial.print("Raw ALS: "); Serial.println(veml.readALS());
+
+  uint16_t irq = veml.interruptStatus();
+  if (irq & VEML7700_INTERRUPT_LOW) {
+    Serial.println("** Low threshold"); 
+  }
+  if (irq & VEML7700_INTERRUPT_HIGH) {
+    Serial.println("** High threshold"); 
+  }
+	// MEASURE x = MEASURE(1209.09732489);
+	// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
+	// x.Def = SENSOR_DEF(0.01,1,"$");
+	// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
+	// Serial.println(CurrentProbe.Probe.Pressure.toString().c_str());
 }

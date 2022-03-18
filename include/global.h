@@ -49,9 +49,9 @@ const struct PIN {
 class SENSOR_DEF{
     public:
 		inline SENSOR_DEF() {}
-		// CurrentProbe.Energy.Battery.Voltage = SENSOR_DEF(4.2,"V");
+		// CurrentProbe.Energy.Battery.Voltage.Def = SENSOR_DEF(4.2,"V");
 		// inline SENSOR_DEF(double value, std::string unit) : Value(round(value*100)/100), Unit(unit) {}
-		inline SENSOR_DEF(double offset,double coef,std::string unit) : Offset(offset),Coef(coef),Unit(unit) {}
+		inline SENSOR_DEF(double coef,double offset,std::string unit) : Offset(offset),Coef(coef),Unit(unit) {}
 
 		double Offset=0;
 		double Coef=1;
@@ -70,16 +70,16 @@ class SENSOR_DEF{
 	};
 class MEASURE {
 	public:
-		inline MEASURE() {}
+		// inline MEASURE() {}
 		// CurrentProbe.Energy.Battery.Voltage = MEASURE(4.2,"V");
 		// inline MEASURE(double value, std::string unit) : Value(round(value*100)/100), Unit(unit) {}
-		inline MEASURE(double value) : Raw(round(value*1000)/1000) {}
 
 		double Raw;
 		SENSOR_DEF Def;
 
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(MEASURE, Raw, Def)
 		//"{...}"" = maMesure.toJson();
+		inline void Set(double value) {Raw=round(value*100)/100;}
 		inline double Value() {
 			// Valeur corrigee et arrondi a 2 decimals
 			return (round((this->Def.Coef * this->Raw + this->Def.Offset) * 100) / 100) ;

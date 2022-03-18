@@ -9,10 +9,10 @@
 
 Adafruit_BMP280 bmp; // I2C
 
-// PINs
-#define BATTERY_PIN 35
-#define POWER_PIN 32
-#define LD1_PIN 16
+// // PINs
+// #define BATTERY_PIN 35
+// #define POWER_PIN 32
+// #define LD1_PIN 16
 
 //  Heard led as PWM
 const int  FREQ = 5000;
@@ -23,7 +23,7 @@ void heartPulse(void * parameter){
 	// configure LED PWM functionalitites
 	ledcSetup(LD1CHANNEL, FREQ, RESOLUTION);
 	// attach the channel to the GPIO to be controlled
-	ledcAttachPin(LD1_PIN, LD1CHANNEL);
+	ledcAttachPin(Pin.LD1, LD1CHANNEL);
 		Serial.println("init PIN");
 
 	// ECG of earth, use 10ms
@@ -58,14 +58,14 @@ double getBatteryCapacity(double VBat, double VPower){
 }
 double getBatteryVoltage(){
 	// Vbat = Vread * (R1 + R2) / R2
-	float Vread = ((float)analogRead(BATTERY_PIN) / 4096 * 3.3);
+	float Vread = ((float)analogRead(Pin.BATTERY) / 4096 * 3.3);
 	//   Serial.printf("TensionPin(35): %f\n",Vread);
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
 	return Vread*(20120+9670)/20120;
 }
 double getPowerVoltage(){
 	// Vbat = Vread * (R1 + R2) / R2
-	float Vread = ((float)analogRead(POWER_PIN) / 4096 * 3.3);
+	float Vread = ((float)analogRead(Pin.POWER) / 4096 * 3.3);
 	// Serial.printf("TensionPin(35): %f\n",Vread);
 	// Serial.printf("Tension Battery: %fV\n",BatVoltage);
 	return Vread*2;
@@ -96,8 +96,10 @@ void readBMP280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
 	Serial.println("+---> readBMP280()");
 	if (bmp.takeForcedMeasurement()) {
-		CurrentProbe.Probe.Temperature = MEASURE( bmp.readTemperature()); // bme.readTemperature();
-		CurrentProbe.Probe.Pressure = MEASURE(bmp.readPressure()); // bme.readPressure() / 100;
+		// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
+		CurrentProbe.Probe.Temperature.Set( bmp.readTemperature()); // bme.readTemperature();
+		CurrentProbe.Probe.Pressure.Set(bmp.readPressure()); // bme.readPressure() / 100;
+		// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
     	Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
     	Serial.printf("|   +---> Pressure : %s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	} else {
@@ -121,13 +123,18 @@ void getSensorData(void * parameter) {
 	initBMP280();
 	DeepSleepNow = false;
 	for (;;) {
-		Serial.println("> getSensorData() ===============================================================================");
+		Serial.println("> getSensorData()");
 		Working = true;
-		CurrentProbe.Probe.CO2 = MEASURE( rand() % 100 + 415);
-		CurrentProbe.Probe.Humidity = MEASURE( rand() % 40 + 30);
-		CurrentProbe.Energy.PowerSupply.Voltage = MEASURE( getPowerVoltage());
-		CurrentProbe.Energy.Battery.Voltage =  MEASURE( getBatteryVoltage());
-		CurrentProbe.Energy.Battery.Capacity = MEASURE( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Value(), CurrentProbe.Energy.PowerSupply.Voltage.Value()));
+		CurrentProbe.Probe.CO2.Set( rand() % 100 + 415);
+    	Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
+		CurrentProbe.Probe.Humidity.Set( rand() % 40 + 30);
+    	Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
+		CurrentProbe.Energy.PowerSupply.Voltage.Set( getPowerVoltage());
+    	Serial.printf("|   +---> PowerSupply.Voltage : %s\n",CurrentProbe.Energy.PowerSupply.Voltage.toString().c_str());
+		CurrentProbe.Energy.Battery.Voltage.Set( getBatteryVoltage());
+    	Serial.printf("|   +---> Battery.Voltage : %s\n",CurrentProbe.Energy.Battery.Voltage.toString().c_str());
+		CurrentProbe.Energy.Battery.Capacity.Set( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Raw, CurrentProbe.Energy.PowerSupply.Voltage.Raw) );
+    	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
 		if(i2cbus.BMP280){
 			readBMP280();
 		} else {Serial.println("+---> Missing BMP280 sensor!");}

@@ -10,9 +10,9 @@ bool check_WiFi_Available(){
 	// Serial.print(CurrentProbe.Settings.Lan.toJson().c_str());
 
     static wifi_mode_t mode = WiFi.getMode();
-    CurrentProbe.Network.Hostname       = WiFi.getHostname();
-    CurrentProbe.Network.MAC            = WiFi.macAddress().c_str();
-    CurrentProbe.Network.Strength       = MEASURE(WiFi.RSSI());
+    CurrentProbe.Network.Strength.Set(WiFi.RSSI());
+    CurrentProbe.Network.Hostname = WiFi.getHostname();
+    CurrentProbe.Network.MAC      = WiFi.macAddress().c_str();
     if (mode == WIFI_MODE_STA){
 		// Serial.printf("WIFI_MODE_STA\n");
         CurrentProbe.Network.IP             = WiFi.localIP().toString().c_str();
@@ -29,7 +29,6 @@ bool check_WiFi_Available(){
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.softAPSubnetCIDR()).c_str() ;
         CurrentProbe.Network.Gateway        = "";
         CurrentProbe.Network.DNS1            = WiFi.dnsIP().toString().c_str();
-        // CurrentProbe.Network.Strength       = MEASURE(-120, "dBm");
 	    WIFI_CONNECTED = false;
 		return (CurrentProbe.Network.IP != "0.0.0.0");
     }
