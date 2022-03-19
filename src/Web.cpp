@@ -187,9 +187,8 @@ void setup_Routing(){
 
 bool uploadData(const char * data, const char * url) {
 	// Block until we are able to connect to the WiFi access point
-	if (WIFI_CONNECTED && DeepSleepNow == false) {
-		Working = true;
-
+	if (WIFI_CONNECTED) {
+		Transfert = true;
 		// Send request
 		httpClient.begin(Wclient, url);
 		Serial.printf("+---> Upload(JSON) to %s > ", url);
@@ -202,7 +201,7 @@ bool uploadData(const char * data, const char * url) {
 
 		// Disconnect
 		httpClient.end();
-		Working = false;
+		Transfert = false;
 		return httpResponseCode == 201 ? true : false;
 	}
 	return false;

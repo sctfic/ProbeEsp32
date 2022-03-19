@@ -8,22 +8,7 @@
 #include "display.h"
 #include "sensors.h"
 // #include <SoftwareSerial.h>                               //  Remove if using HardwareSerial or non-uno compatabile device    
-#include "Adafruit_VEML7700.h"
 
-Adafruit_VEML7700 veml = Adafruit_VEML7700();
-
-void enableDeepSleep(){
-	if (CurrentProbe.Settings.EnableDeepSleep){
-		Serial.printf("GO deep_sleep_start(%i) ",CurrentProbe.Settings.MeasurementInterval);
-		while (Working || Transfert){
-			vTaskDelay(100);
-			Serial.print("-");
-		}
-		Serial.println(" !");
-		displayDeepSleep();
-		esp_deep_sleep_start();
-	}
-}
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
 
@@ -50,18 +35,46 @@ void manageScreen(void * parameter){
 		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
 
 		if (Working || (!Working && OnOff)){
-			displayStatus(OnOff);
+			displayTransfert(OnOff);
 			refreshScreen();
-			vTaskDelay(300);
+			// vTaskDelay(300);
 		} else {
 			refreshScreen();
-			vTaskDelay(300);
+			// vTaskDelay(300);
 		}
-		if (DeepSleepNow){
-			// vTaskDelay( 3000);
-			enableDeepSleep();
+		delay(100);
+	}
+}
+void uploaderDeepSleep(void * parameter){
+	for (;;) {
+		int i = 600; // 600 = 1 min
+		DeepSleepNow = false;
+		while (!WIFI_CONNECTED && i>0) {
+			vTaskDelay( 100 );
+			i--;
 		}
-		delay(1000);
+		if (WIFI_CONNECTED) {
+			// read CO2 SPi or I2C
+			Transfert = true;
+			DeepSleepNow = uploadData(CurrentProbe.toJson().c_str(), CurrentProbe.Settings.SrvDataBase2Post.c_str());
+			Transfert = false;
+		} else {
+			Serial.println("+---> [ERROR] uploadData require wifi !");
+		}
+		if(CurrentProbe.Settings.EnableDeepSleep){
+			Serial.printf("+---> GO deep_sleep_start(%i) ",CurrentProbe.Settings.MeasurementInterval);
+			while (Working || Transfert){
+				vTaskDelay(100);
+				Serial.print("-");
+			}
+			Serial.println(" !");
+			esp_sleep_enable_timer_wakeup((CurrentProbe.Settings.MeasurementInterval-2) * 1000000);
+			displayDeepSleep();
+			esp_deep_sleep_start();
+		} else {
+			// il n'y a pas de mise en veille donc on pattiente avant les prochaines mesures
+			vTaskDelay( CurrentProbe.Settings.MeasurementInterval * 1000);
+		}
 	}
 }
 void setup_displayTask() {
@@ -104,7 +117,17 @@ void setup_hearthTask() {
 		0
 	);
 }
-
+void setup_uploaderTask() {
+	xTaskCreatePinnedToCore(
+		uploaderDeepSleep,
+		"Upload Data to serveur every [MeasurementInterval] sec",    // Name of the task (for debugging)
+		5000, 						// Stack size (bytes)
+		NULL,    				    // Parameter to pass
+		5,     				        // Task priority
+		NULL,						// Task handle
+		0
+	);
+}
 
 void setup() {
 	// Serial port for debugging purposes
@@ -120,7 +143,6 @@ void setup() {
 
 	initSPIFFS();
 	loadJsonSettings(SettingsPath);
-	esp_sleep_enable_timer_wakeup((CurrentProbe.Settings.MeasurementInterval-2) * 1000000);
 
 	if (!initWiFi()){
 		initAccessPoint();
@@ -143,43 +165,6 @@ void setup() {
 		Serial.println(CurrentProbe.Network.Gateway.c_str());
 	}
 	setup_Routing();
-
-
-	  if (!veml.begin()) {
-    Serial.println("Sensor not found");
-    while (1);
-  }
-  Serial.println("Sensor found");
-
-  veml.setGain(VEML7700_GAIN_1);
-  veml.setIntegrationTime(VEML7700_IT_800MS);
-
-  Serial.print(F("Gain: "));
-  switch (veml.getGain()) {
-    case VEML7700_GAIN_1: Serial.println("1"); break;
-    case VEML7700_GAIN_2: Serial.println("2"); break;
-    case VEML7700_GAIN_1_4: Serial.println("1/4"); break;
-    case VEML7700_GAIN_1_8: Serial.println("1/8"); break;
-  }
-
-  Serial.print(F("Integration Time (ms): "));
-  switch (veml.getIntegrationTime()) {
-    case VEML7700_IT_25MS: Serial.println("25"); break;
-    case VEML7700_IT_50MS: Serial.println("50"); break;
-    case VEML7700_IT_100MS: Serial.println("100"); break;
-    case VEML7700_IT_200MS: Serial.println("200"); break;
-    case VEML7700_IT_400MS: Serial.println("400"); break;
-    case VEML7700_IT_800MS: Serial.println("800"); break;
-  }
-
-  //veml.powerSaveEnable(true);
-  //veml.setPowerSaveMode(VEML7700_POWERSAVE_MODE4);
-
-  veml.setLowThreshold(10000); //veml.readALS() value for event event
-  veml.setHighThreshold(20000); //veml.readALS() value for event event
-  veml.interruptEnable(true);
-  veml.setGain(VEML7700_GAIN_1_4);
-  veml.setIntegrationTime(VEML7700_IT_100MS);
 }
 
 void loop() {
@@ -204,22 +189,4 @@ void loop() {
 		Working = false;
 		delay(10000);
 	}
-	// Serial.print("+");
-	delay(1000);
-  Serial.print("Lux: "); Serial.println(veml.readLux());
-  Serial.print("White: "); Serial.println(veml.readWhite());
-  Serial.print("Raw ALS: "); Serial.println(veml.readALS());
-
-  uint16_t irq = veml.interruptStatus();
-  if (irq & VEML7700_INTERRUPT_LOW) {
-    Serial.println("** Low threshold"); 
-  }
-  if (irq & VEML7700_INTERRUPT_HIGH) {
-    Serial.println("** High threshold"); 
-  }
-	// MEASURE x = MEASURE(1209.09732489);
-	// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
-	// x.Def = SENSOR_DEF(0.01,1,"$");
-	// Serial.println(CurrentProbe.Probe.Pressure.toJson().c_str());
-	// Serial.println(CurrentProbe.Probe.Pressure.toString().c_str());
 }

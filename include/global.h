@@ -35,8 +35,8 @@ struct I2CBUS {
 	bool OLED;
 	bool BMP280;
 	bool BME280;
-	bool CO2;
-	bool LUX;
+	bool SCD40;
+	bool VEML7700;
 };
 
 const struct PIN {

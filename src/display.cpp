@@ -76,7 +76,7 @@ void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char 
 	// display.setCursor(x+lround(lenght/2)+5,y+8);
 	// display.println("%");
 }
-void displayStatus(bool color){
+void displayTransfert(bool color){
 	// les 2 petites fleches en bas
 	int x = 113;
 	int y = 53;
@@ -176,11 +176,12 @@ void displaySensor(){
 	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
 	// Serial.printf("Press:%s\n",CurrentProbe.Probe.Pressure.toString().c_str());
 	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.Raw);
-	display.setCursor(30,SCREEN_BLUE_0+4+27);
-	display.printf("CO2:%.1fppm",CurrentProbe.Probe.CO2.Raw);
-	display.setCursor(30,SCREEN_BLUE_0+4+36);
-	display.printf("VBat:%.2fV",CurrentProbe.Energy.Battery.Voltage.Raw);
+	display.printf("Lux:%s",CurrentProbe.Probe.LUX.toString().c_str());
+	// display.setCursor(30,SCREEN_BLUE_0+4+27);
+	// display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.Raw);
+	// display.printf("CO2:%.1fppm",CurrentProbe.Probe.CO2.Raw);
+	// display.setCursor(30,SCREEN_BLUE_0+4+36);
+	// display.printf("VBat:%.2fV",CurrentProbe.Energy.Battery.Voltage.Raw);
 }
 void displayDeepSleep(){
 	if (CurrentProbe.Settings.DisplayDuringDeepSleep){
