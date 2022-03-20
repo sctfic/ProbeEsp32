@@ -73,11 +73,11 @@ void loadJsonSettings(const char *path){
 		if((SettingsJson[0]=='{' && SettingsJson[SettingsJson.length()-1]=='}') || (SettingsJson[0]=='[' && SettingsJson[SettingsJson.length()-1]==']')){
 			Serial.printf("Loading SettingsJson [%i]\n",SettingsJson.length());
 			CurrentProbe.Settings = SETTINGS::fromJson(SettingsJson);
-			Serial.println("CurrentProbe.Settings.Probe.toJson().c_str()");
-			Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
+			// Serial.println("CurrentProbe.Settings.Probe.toJson().c_str()");
+			// Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
 			CurrentProbe.Probe	= CurrentProbe.Settings.Probe;
-			Serial.println("CurrentProbe.Probe.toJson().c_str()");
-			Serial.println(CurrentProbe.Probe.toJson().c_str());
+			// Serial.println("CurrentProbe.Probe.toJson().c_str()");
+			// Serial.println(CurrentProbe.Probe.toJson().c_str());
 
 		} else {
 			Serial.println(SettingsJson.c_str());

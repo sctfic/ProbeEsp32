@@ -22,6 +22,9 @@ extern bool Working;
 extern bool Transfert;
 extern bool OnOff;
 extern bool WIFI_CONNECTED;
+extern bool DataReady;
+extern int IgnoreDeepSleep;
+
 
 
 extern const char * SettingsPath;

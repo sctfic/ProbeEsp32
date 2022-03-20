@@ -71,18 +71,18 @@ bool initWiFi() {
 		WiFi.setHostname(CurrentProbe.Settings.Lan.Hostname.c_str());
 		// Serial.printf("Set Hostname: %s",WiFi.getHostname());
 	}
-	check_WiFi_Available();
+	// check_WiFi_Available();
 	// Activation Connexion wifi
 	// Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.Lan.SSID.c_str(), CurrentProbe.Settings.Lan.PWD.c_str());
   	WiFi.begin(CurrentProbe.Settings.Lan.SSID.c_str(), CurrentProbe.Settings.Lan.PWD.c_str());
 
 	while (!check_WiFi_Available()) {
 		// Serial.println((int)WiFi.localIP());
-		Serial.print(".");
+		// Serial.print(".");
 		delay(200);
-		if ( i >= wait ) {
+		if ( i >= wait ) { // 20 * 200ms = 4sec
 			i=0;
-			Serial.println("");
+			// Serial.println("");
 
 			if (retry == 3) {
 				return false;
@@ -94,8 +94,7 @@ bool initWiFi() {
 		}
 		i++;
 	}
-	Serial.println("");
-
+	// Serial.println("");
 	return true;
 }
 void initAccessPoint(){

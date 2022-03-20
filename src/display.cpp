@@ -57,7 +57,7 @@ void init_Screen (){
   display.setCursor(0,0);
   Serial.println("Screen Enabled!");
 }
-void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char DisplayValue = NONE){
+void displayProgressbar (char level, char x = 14, char y = 28, char lenght = 100, char DisplayValue = NONE){
 	display.fillRoundRect(x-3, y-3, lenght+6, 10, 5, BLACK);
 	display.drawRoundRect(x-2, y-2, lenght+4, 8, 4, WHITE);
 	display.fillRoundRect(x, y, lround(lenght*level/100), 4, 2, WHITE);
@@ -76,6 +76,7 @@ void progressbar (char level, char x = 14, char y = 28, char lenght = 100, char 
 	// display.setCursor(x+lround(lenght/2)+5,y+8);
 	// display.println("%");
 }
+
 void displayTransfert(bool color){
 	// les 2 petites fleches en bas
 	int x = 113;
@@ -205,4 +206,31 @@ void redrawScreen(){
     displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value());
     displaySensor();
     display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
+}
+void manageScreen(void * parameter){
+	init_Screen();
+	char i = 100;
+	if (esp_sleep_get_wakeup_cause()!=ESP_SLEEP_WAKEUP_TIMER){
+		display.print("Booting...");
+	} else {
+		display.print("WakeUp...");
+	}
+	while (i-=2) {
+		displayProgressbar(100-i); // 10 fois / sec
+		refreshScreen();
+		vTaskDelay(19);
+	}
+	for (;;) {
+		i = 10;
+		redrawScreen(); // 1 fois / sec
+		// Serial.printf("OnOff = %d - ",OnOff);
+		// Serial.printf("Working = %d - ",Working);
+		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
+		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
+		while (i--) {
+			displayTransfert(OnOff); // 10 fois / sec
+			refreshScreen();
+			vTaskDelay(100);
+		}
+	}
 }

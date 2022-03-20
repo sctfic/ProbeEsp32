@@ -38,7 +38,7 @@ void heartPulse(void * parameter){
 	// int pulse[] = {3,4,47,78,112,144,166,180,179,150,98,44,118,169,210,239,254,255,224,137,58,44,36,33,29,26,22,18,15,11,7,4};
 
 	// wave of sin()
-	int pulse[] = {0,1,5,14,27,45,65,89,114,139,164,188,209,227,241,250,255,255,249,239,224,206,184,160,135,109,85,62,41,25,12,4,1,0,0,0,0,0,0,0,0,0};
+	int pulse[] = {0,1,5,14,27,45,65,89,114,139,164,188,209,227,241,249,239,224,206,184,160,135,109,85,62,41,25,12,4,1,0,0};
 	int N = sizeof(pulse) / sizeof(pulse[0]);
 
 	for (;;) {
@@ -308,7 +308,7 @@ void getSensorData(void * parameter) {
 	for (;;) {
 		Working = true;
 		// Transfert = true;
-		// Serial.println("> getSensorData()");
+		Serial.println("+---> readSensors()");
 		// CurrentProbe.Probe.CO2.Set( rand() % 100 + 415);
     	// Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
 		// CurrentProbe.Probe.Humidity.Set( rand() % 40 + 30);
@@ -321,7 +321,12 @@ void getSensorData(void * parameter) {
     	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
 		if(i2cbus.BMP280){
 			readBMP280();
-		} else {Serial.println("+---> Missing BMP280 sensor!");}
+		} else {Serial.println("+---> Missing BMP280 sensor!");
+		}
+		if(i2cbus.VEML7700){
+			readVEML7700();
+		} else {Serial.println("+---> Missing Lux sensor!");
+		}
 		if(i2cbus.BME280){
 			readBME280();
 		} else {Serial.println("+---> Missing BME280 sensor!");
@@ -330,12 +335,9 @@ void getSensorData(void * parameter) {
 			readSCD40();
 		} else {Serial.println("+---> Missing SCD40[CO2] sensor!");
 		}
-		if(i2cbus.VEML7700){
-			readVEML7700();
-		} else {Serial.println("+---> Missing Lux sensor!");
-		}
 		// Transfert = false;
 		Working = false;
 		vTaskDelay( 5000 );
+		DataReady = true;
 	}
 }

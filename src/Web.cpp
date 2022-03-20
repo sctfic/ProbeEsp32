@@ -18,6 +18,7 @@
 void setup_Routing(){
 	// Web Server Root URL
 	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 600;
 		Transfert = true;
 		Serial.println(request->url());
 		request->send(SPIFFS, "/index.html", "text/html");
@@ -27,6 +28,7 @@ void setup_Routing(){
 
 	// display JSON of data
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 60;
 		Transfert = true;
 		Serial.println(request->url());
 		request->send(200, "application/json", CurrentProbe.toJson().c_str());
@@ -34,6 +36,7 @@ void setup_Routing(){
 	});
 	// remove conf
 	server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 10;
 		Working = true;
 		Serial.println(request->url());
 		SPIFFS.remove(SettingsPath);
@@ -43,14 +46,15 @@ void setup_Routing(){
 	});
 	// Scan available network
 	server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 60;
 		Working = true;
 		Transfert = true;
 		// WiFi.scanNetworks will return the number of networks found
+		Serial.println(request->url());
 		int n = WiFi.scanNetworks();
 		String scan = "";
-		Serial.println(request->url());
 		for (int i = 0; i < n; ++i) {
-			if (i>0){scan = scan + ",";}
+			scan = scan + ",";
 			scan = scan + "\"" +WiFi.SSID(i)+ "\"";
 			// Print SSID and RSSI for each network found
 			Serial.print(i + 1);
@@ -67,6 +71,7 @@ void setup_Routing(){
 	});
 	// Save and apply new conf
 	server.on("/Settings/apply", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 60;
 		Transfert = true;
 		// int paramsNr = request->params();
 		Serial.println(request->url());
@@ -118,6 +123,7 @@ void setup_Routing(){
 	});
 	// Save and apply new conf
 	server.on("/Sensors/apply", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 60;
 		Transfert = true;
 		// int paramsNr = request->params();
 		Serial.println(request->url());
@@ -152,9 +158,9 @@ void setup_Routing(){
 			std::stod(request->arg("UVOffset").c_str()),
 			request->arg("UVUnit").c_str()
 		);
-		Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
+		// Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
 		CurrentProbe.Probe	= CurrentProbe.Settings.Probe;
-		Serial.println(CurrentProbe.Probe.toJson().c_str());
+		// Serial.println(CurrentProbe.Probe.toJson().c_str());
 
 		// for(int i=0;i<paramsNr;i++){
 		// 	AsyncWebParameter* p = request->getParam(i);
@@ -173,6 +179,7 @@ void setup_Routing(){
 	});
     // Web Server Sensor URL
 	server.on("/Sensors", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 600;
 		Transfert = true;
 		Serial.println(request->url());
 		request->send(SPIFFS, "/Sensors.html", "text/html");

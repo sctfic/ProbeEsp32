@@ -789,7 +789,7 @@
 				<option value="loading">loading...</option>
 			</select>
 			<!-- <input id="SSID" class="u-full-width required" placeholder="Connect to Network : SSID" name="SSID" type="text" value="" required pattern="|(.{3,32})"><br/> -->
-			<input id="PWD" class="u-full-width required" placeholder="PassWord for this network" name="PWD" type="text" value="" required pattern="|(.{0,64})"><span></span><br/>
+			<input id="PWD" class="u-full-width" placeholder="PassWord for this network" name="PWD" type="text" value="" pattern="|(.{0,64})"><span></span><br/>
 			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><span></span><br/>
 			<label class="dhcp"><input id="DHCP" Name="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
 				<span class="ipFixe">

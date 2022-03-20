@@ -8,6 +8,7 @@
 #include "display.h"
 #include "sensors.h"
 // #include <SoftwareSerial.h>                               //  Remove if using HardwareSerial or non-uno compatabile device    
+unsigned long startTime;
 
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
@@ -24,29 +25,12 @@ void print_wakeup_reason(){
     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
   }
 }
-void manageScreen(void * parameter){
-	init_Screen();
-	int i;
-	for (;;) {
-		i = 10;
-		redrawScreen();
 
-		// Serial.printf("OnOff = %d - ",OnOff);
-		// Serial.printf("Working = %d - ",Working);
-		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
-		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
-		while (i--) {
-			displayTransfert(OnOff);
-			refreshScreen();
-			delay(100);
-		}
-	}
-}
 void uploaderDeepSleep(void * parameter){
 	for (;;) {
 		int i = 150; // 600 = 60 sec
 		DeepSleepNow = false;
-		while (!WIFI_CONNECTED && i>0) {
+		while (!WIFI_CONNECTED && i>0 || !DataReady) {
 			vTaskDelay( 100 );
 			i--;
 		}
@@ -56,19 +40,23 @@ void uploaderDeepSleep(void * parameter){
 		} else {
 			Serial.println("+---> [ERROR] uploadData require wifi !");
 		}
-		if(CurrentProbe.Settings.EnableDeepSleep){
+		if(CurrentProbe.Settings.EnableDeepSleep && IgnoreDeepSleep <= 0){
 			Serial.printf("+---> GO deep_sleep_start(%i) ",CurrentProbe.Settings.MeasurementInterval);
 			while (Working || Transfert){
 				vTaskDelay(100);
-				Serial.print("-");
+				// Serial.print("-");
 			}
-			Serial.println(" !");
-			esp_sleep_enable_timer_wakeup((CurrentProbe.Settings.MeasurementInterval-2) * 1000000);
+			// Serial.println(" !");
+			// DataReady = false;
+			// Serial.printf("Duration %i Sec",((millis()-startTime)));
+
+			esp_sleep_enable_timer_wakeup(((CurrentProbe.Settings.MeasurementInterval) * 1000 - (millis()-startTime)) * 1000);
 			displayDeepSleep();
 			esp_deep_sleep_start();
 		} else {
 			// il n'y a pas de mise en veille donc on pattiente avant les prochaines mesures
-			vTaskDelay((CurrentProbe.Settings.MeasurementInterval-2) * 1000);
+			vTaskDelay(((CurrentProbe.Settings.MeasurementInterval) * 1000 - (millis()-startTime)) * 1000);
+			IgnoreDeepSleep -= CurrentProbe.Settings.MeasurementInterval;
 		}
 	}
 }
@@ -123,19 +111,18 @@ void setup_uploaderTask() {
 		0
 	);
 }
-
 void setup() {
+	startTime = millis();
 	// Serial port for debugging purposes
 	Serial.begin(115200);
 	// i2cbus = {4,5,15,false,false,false,false,false};
-	print_wakeup_reason();
+	// print_wakeup_reason();
 	setup_hearthTask();
 	mutex = xSemaphoreCreateMutex();
 	setup_displayTask();
 	delay(100);
-
 	setup_sensorTask();
-
+	setup_uploaderTask();
 	initSPIFFS();
 	loadJsonSettings(SettingsPath);
 
@@ -163,25 +150,43 @@ void setup() {
 }
 
 void loop() {
+	int n;
 	if (!check_WiFi_Available()){
 		Working = true;
 		WiFi.disconnect();
-		WiFi.reconnect();
-		Serial.println("> Wifi");
-		Serial.print("+---> ");
-		Serial.print(CurrentProbe.Network.Hostname.c_str());
-		Serial.print(" <---> ");
-		Serial.print(CurrentProbe.Network.SSID.c_str());
-		Serial.print(" [");
-		Serial.print(CurrentProbe.Network.Strength.toString().c_str());
-		Serial.println("]");
-		Serial.print("+---> ");
-		Serial.print(CurrentProbe.Network.IP.c_str());
-		Serial.print("/");
-		Serial.print(CurrentProbe.Network.CIDR.c_str());
-		Serial.print(" - ");
-		Serial.println(CurrentProbe.Network.Gateway.c_str());
-		Working = false;
+		n = WiFi.scanNetworks();
+		for (int i = 0; i < n; ++i) {
+			// Print SSID and RSSI for each network found
+			Serial.print(WiFi.SSID(i));
+			Serial.print(" (");
+			Serial.print(WiFi.RSSI(i));
+			Serial.print(")");
+			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" " : "*");
+			Serial.printf("%s == %s (%i)", WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str(), strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str()));
+
+			if (strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str()) == 0){
+				WiFi.reconnect();
+				Serial.println("> Wifi");
+				Serial.print("+---> ");
+				Serial.print(CurrentProbe.Network.Hostname.c_str());
+				Serial.print(" <---> ");
+				Serial.print(CurrentProbe.Network.SSID.c_str());
+				Serial.print(" [");
+				Serial.print(CurrentProbe.Network.Strength.toString().c_str());
+				Serial.println("]");
+				Serial.print("+---> ");
+				Serial.print(CurrentProbe.Network.IP.c_str());
+				Serial.print("/");
+				Serial.print(CurrentProbe.Network.CIDR.c_str());
+				Serial.print(" <---> ");
+				Serial.print(CurrentProbe.Network.Gateway.c_str());
+				Serial.println(" <---> www");
+				
+			}
+			
+		}
 		delay(10000);
+		Working = false;
 	}
+	delay(1000);
 }
