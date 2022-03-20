@@ -44,6 +44,7 @@ void setup_Routing(){
 	// Scan available network
 	server.on("/scan", HTTP_GET, [](AsyncWebServerRequest *request){
 		Working = true;
+		Transfert = true;
 		// WiFi.scanNetworks will return the number of networks found
 		int n = WiFi.scanNetworks();
 		String scan = "";
@@ -60,7 +61,6 @@ void setup_Routing(){
 			Serial.print(")");
 			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" " : "*");
 		}
-		Transfert = true;
 		request->send(200, "application/json", ("["+scan+"]"));
 		Working = false;
 		Transfert = false;

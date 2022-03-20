@@ -26,28 +26,25 @@ void print_wakeup_reason(){
 }
 void manageScreen(void * parameter){
 	init_Screen();
+	int i;
 	for (;;) {
+		i = 10;
 		redrawScreen();
 
 		// Serial.printf("OnOff = %d - ",OnOff);
 		// Serial.printf("Working = %d - ",Working);
 		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
 		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
-
-		if (Working || (!Working && OnOff)){
+		while (i--) {
 			displayTransfert(OnOff);
 			refreshScreen();
-			// vTaskDelay(300);
-		} else {
-			refreshScreen();
-			// vTaskDelay(300);
+			delay(100);
 		}
-		delay(100);
 	}
 }
 void uploaderDeepSleep(void * parameter){
 	for (;;) {
-		int i = 600; // 600 = 1 min
+		int i = 150; // 600 = 60 sec
 		DeepSleepNow = false;
 		while (!WIFI_CONNECTED && i>0) {
 			vTaskDelay( 100 );
@@ -55,9 +52,7 @@ void uploaderDeepSleep(void * parameter){
 		}
 		if (WIFI_CONNECTED) {
 			// read CO2 SPi or I2C
-			Transfert = true;
 			DeepSleepNow = uploadData(CurrentProbe.toJson().c_str(), CurrentProbe.Settings.SrvDataBase2Post.c_str());
-			Transfert = false;
 		} else {
 			Serial.println("+---> [ERROR] uploadData require wifi !");
 		}
@@ -73,7 +68,7 @@ void uploaderDeepSleep(void * parameter){
 			esp_deep_sleep_start();
 		} else {
 			// il n'y a pas de mise en veille donc on pattiente avant les prochaines mesures
-			vTaskDelay( CurrentProbe.Settings.MeasurementInterval * 1000);
+			vTaskDelay((CurrentProbe.Settings.MeasurementInterval-2) * 1000);
 		}
 	}
 }

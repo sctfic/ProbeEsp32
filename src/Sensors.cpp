@@ -47,7 +47,7 @@ void heartPulse(void * parameter){
 			if ((x%3) == 0){
 				OnOff = !OnOff;
 			}
-			vTaskDelay(50-Working*30);
+			vTaskDelay(50-Working*40);
 		}
 		// vTaskDelay(250);
 	}
@@ -82,8 +82,10 @@ bool initVEML7700(){
                       "try a different address!"));
 	} else {
 		// Default settings from datasheet.
-		veml.powerSaveEnable(true);
-		veml.setPowerSaveMode(VEML7700_POWERSAVE_MODE1); // 1 mesure par 1 sec, reduit la conso
+		veml.powerSaveEnable(false);
+		// veml.setGain(VEML7700_GAIN_1_4);
+		// veml.setIntegrationTime(VEML7700_IT_25MS);
+		// veml.setPowerSaveMode(VEML7700_POWERSAVE_MODE1); // 1 mesure par 1 sec, reduit la conso
 		// veml.setPowerSaveMode(VEML7700_POWERSAVE_MODE4); // 1 mesure par 5 sec, reduit la conso
     	xSemaphoreGive( mutex );
 		return true;
@@ -124,144 +126,154 @@ bool initSCD40(){
     xSemaphoreGive( mutex );
 	return false;
 }
-void readVEML7700(){
+// int readVEML7700Flux(int Gain, int IntegrationTime){
+// 	int wait, als ;
+// 	float Lux=0;
+// 	// Serial.print("+---> GAIN_");
+// 	switch (Gain) {
+// 		case VEML7700_GAIN_1: Serial.print("1"); break;
+// 		case VEML7700_GAIN_2: Serial.print("2"); break;
+// 		case VEML7700_GAIN_1_4: Serial.print("1/4"); break;
+// 		case VEML7700_GAIN_1_8: Serial.print("1/8"); break;
+// 	}
+// 	Serial.print(" x ");
+// 	switch (IntegrationTime) {
+// 		case VEML7700_IT_25MS:  Serial.print("25");wait=25; break;
+// 		case VEML7700_IT_50MS:  Serial.print("50");wait=50; break;
+// 		case VEML7700_IT_100MS: Serial.print("100");wait=100; break;
+// 		case VEML7700_IT_200MS: Serial.print("200");wait=200; break;
+// 		case VEML7700_IT_400MS: Serial.print("400");wait=400; break;
+// 		case VEML7700_IT_800MS: Serial.print("800");wait=800; break;
+// 	}
+// 	Serial.print(" ms\t: ");
+// 	xSemaphoreTake( mutex, portMAX_DELAY );
+
+// 	// veml.powerSaveEnable(false);
+// 	veml.setGain(Gain);
+// 	veml.setIntegrationTime(IntegrationTime);
+// 	vTaskDelay( 2*wait+5 );
+// 	Lux = veml.readLuxNormalized();
+// 	als = veml.readALS();
+// 	Serial.printf("%.2f[%i]\t",Lux,als);
+
+// 	// vTaskDelay( 2*wait+5 );
+// 	// 	Lux = veml.readLuxNormalized();
+// 	// 	als = veml.readALS();
+// 	// Serial.printf("%.2f[%i]\t",Lux,als);
+
+// 	vTaskDelay( 2*wait+5 );
+// 		Lux = veml.readLuxNormalized();
+// 		als = veml.readALS();
+// 	Serial.printf("%.2f[%i]",Lux,als);
+
+//     xSemaphoreGive( mutex );
+
+// 	if (als > 50000 || als < 10000) Serial.print("~");
+// 	Serial.println("");
+// 	return Lux;
+// }
+float calibrateVEML7700(bool wait){
+	int Gain, IntegrationTime, pause=25;
+	float Lux;
+	//			2			1			1/4		1/8
+	//		+----------------------------------------
+	//	800	|	236			472			1887	3775
+	//	400	|	472			944			3775.	7550
+	//	200	|	944			1887		7550.	15099
+	//	100	|	1887		3775		15099.	30199
+	//	50 	|	3775		7550		30199.	60398
+	//	25 	|	7550		15099		60398.	120796
 	xSemaphoreTake( mutex, portMAX_DELAY );
-	// veml.enable(true);
-	int Gain = VEML7700_GAIN_1_8;
-	int IntegrationTime = VEML7700_IT_25MS;
-	int wait= 25;
-	int Lux=0;
-
-	veml.powerSaveEnable(false);
-	veml.setGain(Gain);
-	veml.setIntegrationTime(IntegrationTime);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-	vTaskDelay(2);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-	vTaskDelay(2);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-	vTaskDelay(2);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-	vTaskDelay(2);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-	vTaskDelay(2);
-
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-
-	vTaskDelay( 2*wait );
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-
-	vTaskDelay( wait );
-	Lux = veml.readLux();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-
-	vTaskDelay( wait );
-	Lux = veml.readLuxNormalized();
-	Serial.printf("+---> readVEML7700(%i)\n",Lux);
-
-	//			2		1		1/4		1/8
-	//		+---------------------------------
-	//	800	|	236		472		1887	3775
-	//	400	|	472		944		3775	7550
-	//	200	|	944		1887	7550	15099
-	//	100	|	1887	3775	15099	30199
-	//	50 	|	3775	7550	30199	60398
-	//	25 	|	7550	15099	60398	120796
-
-	if (Lux < 236*0.9){
-		Gain = VEML7700_GAIN_2;
-		IntegrationTime = VEML7700_IT_800MS;
-		wait= 800;
-	    Serial.println("|   +---> GAIN_2 x 800MS");
-	} else if (Lux < 472*0.9){
-		Gain = VEML7700_GAIN_2;
-		IntegrationTime = VEML7700_IT_400MS;
-		wait= 400;
-	    Serial.println("|   +---> GAIN_2 x 400MS");
-	} else if (Lux < 944*0.9){
-		Gain = VEML7700_GAIN_2;
-		IntegrationTime = VEML7700_IT_200MS;
-		wait= 200;
-	    Serial.println("|   +---> GAIN_2 x 200MS");
-	} else if (Lux < 1887*0.9){
-		Gain = VEML7700_GAIN_1;
-		IntegrationTime = VEML7700_IT_200MS;
-		wait= 200;
-	    Serial.println("|   +---> GAIN_1 x 200MS");
-	} else if (Lux < 3775*0.9){
-		Gain = VEML7700_GAIN_1;
-		IntegrationTime = VEML7700_IT_100MS;
-		wait= 100;
-	    Serial.println("|   +---> GAIN_1 x 100MS");
-	} else if (Lux < 7550*0.9){
-		Gain = VEML7700_GAIN_1;
-		IntegrationTime = VEML7700_IT_50MS;
-		wait = 50;
-	    Serial.println("|   +---> GAIN_1 x _50MS");
-	} else if (Lux < 15099*0.9){
-		Gain = VEML7700_GAIN_1_4;
-		IntegrationTime = VEML7700_IT_100MS;
-		wait= 100;
-	    Serial.println("|   +---> GAIN_1/4 x 100MS");
-	} else if (Lux < 30199*0.9){
-		Gain = VEML7700_GAIN_1_4;
-		IntegrationTime = VEML7700_IT_50MS;
-		wait = 50;
-	    Serial.println("|   +---> GAIN_1/4 x _50MS");
-	} else if (Lux < 60398*0.9){
-		Gain = VEML7700_GAIN_1_4;
-		IntegrationTime = VEML7700_IT_25MS;
-		wait = 25;
-	    Serial.println("|   +---> GAIN_1/4 x _25MS");
-	} else {
-		Gain = VEML7700_GAIN_1_8;
-		IntegrationTime = VEML7700_IT_25MS;
-		wait = 25;
-	    Serial.println("|   +---> GAIN_1/8 x _25MS");
-	}
-	
-	veml.setGain(Gain);
-	veml.setIntegrationTime(IntegrationTime);
-
-	vTaskDelay( 2*wait );
-	if (Gain == VEML7700_GAIN_1_8 && IntegrationTime == VEML7700_IT_25MS){
-		CurrentProbe.Probe.LUX.Set(veml.readLuxNormalized());
-	}else{
-		CurrentProbe.Probe.LUX.Set(veml.readLux());
-	}
-    Serial.printf("|   +---> Lux : %s (2*%ims)\n",CurrentProbe.Probe.LUX.toString().c_str(),wait);
-
-	vTaskDelay( wait );
-	if (Gain == VEML7700_GAIN_1_8 && IntegrationTime == VEML7700_IT_25MS){
-		CurrentProbe.Probe.LUX.Set(veml.readLuxNormalized());
-	}else{
-		CurrentProbe.Probe.LUX.Set(veml.readLux());
-	}
-    Serial.printf("|   +---> Lux : %s (%ims)\n",CurrentProbe.Probe.LUX.toString().c_str(),wait);
-
-	vTaskDelay( wait );
-	if (Gain == VEML7700_GAIN_1_8 && IntegrationTime == VEML7700_IT_25MS){
-		CurrentProbe.Probe.LUX.Set(veml.readLuxNormalized());
-	}else{
-		CurrentProbe.Probe.LUX.Set(veml.readLux());
-	}
-    Serial.printf("|   +---> Lux : %s (%ims)\n",CurrentProbe.Probe.LUX.toString().c_str(),wait);
-	
-	// veml.enable(false);
-	veml.powerSaveEnable(true);
+		veml.enable(true);
+		// veml.powerSaveEnable(false);
+		veml.setGain(VEML7700_GAIN_1_4);
+		veml.setIntegrationTime(VEML7700_IT_25MS);
     xSemaphoreGive( mutex );
+	vTaskDelay( 2*pause );
+	xSemaphoreTake( mutex, portMAX_DELAY );
+		Lux = veml.readLux();
+    xSemaphoreGive( mutex );
+
+	if (Lux < 3775*0.7){
+		Gain = VEML7700_GAIN_1_4;
+		IntegrationTime = VEML7700_IT_400MS;
+		pause = 400;
+	} else if (Lux < 7550*0.7){
+		Gain = VEML7700_GAIN_1_4;
+		IntegrationTime = VEML7700_IT_200MS;
+		pause = 200;
+	} else if (Lux < 15099*0.7){
+		Gain = VEML7700_GAIN_1_4;
+		IntegrationTime = VEML7700_IT_100MS;
+		pause = 100;
+	} else if (Lux < 30199*0.7){
+		Gain = VEML7700_GAIN_1_4;
+		IntegrationTime = VEML7700_IT_50MS;
+		pause = 50;
+	} else {
+		Gain = VEML7700_GAIN_1_4;
+		IntegrationTime = VEML7700_IT_25MS;
+		pause = 25;
+	}
+	
+	xSemaphoreTake( mutex, portMAX_DELAY );
+		veml.setGain(Gain);
+		veml.setIntegrationTime(IntegrationTime);
+		// veml.powerSaveEnable(true);
+    xSemaphoreGive( mutex );
+	if (wait){
+		vTaskDelay( 2*pause );
+		xSemaphoreTake( mutex, portMAX_DELAY );
+			Lux = veml.readLux();
+		xSemaphoreGive( mutex );
+	}
+	return Lux;
+}
+void readVEML7700(){
+	int Gain, IntegrationTime, ALS;
+	CurrentProbe.Probe.LUX.Set(calibrateVEML7700(true));
+	xSemaphoreTake( mutex, portMAX_DELAY );
+		veml.enable(false);
+    xSemaphoreGive( mutex );
+	// vTaskDelay( 100 );
+	// xSemaphoreTake( mutex, portMAX_DELAY );
+	// 	Lux = veml.readLux();
+	// 	ALS = veml.readALS();
+	// 	printf("%.3f [%i]\n",Lux,ALS);
+	// 	veml.enable(false);
+    // xSemaphoreGive( mutex );
+
+    Serial.printf("|   +---> Lux : %s\n",CurrentProbe.Probe.LUX.toString().c_str());
+
+	// readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_25MS);
+	// CurrentProbe.Probe.LUX.Set(readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_50MS));
+	// readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_100MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_200MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_400MS);
+	// // readVEML7700Flux(VEML7700_GAIN_1_8 ,VEML7700_IT_800MS);
+
+	// readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_25MS);
+	// readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_50MS);
+	// readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_100MS);
+	// readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_200MS);
+	// readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_400MS);
+	// // readVEML7700Flux(VEML7700_GAIN_1, VEML7700_IT_800MS);
+
+	// readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_25MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_50MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_100MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_200MS);
+	// readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_400MS);
+	// // readVEML7700Flux(VEML7700_GAIN_1_4, VEML7700_IT_800MS);
+
+	// readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_25MS);
+	// readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_50MS);
+	// readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_100MS);
+	// readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_200MS);
+	// readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_400MS);
+	// // readVEML7700Flux(VEML7700_GAIN_2, VEML7700_IT_800MS);
+
+
 }
 void readBMP280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
@@ -295,6 +307,7 @@ void getSensorData(void * parameter) {
 	i2cbus.VEML7700 = initVEML7700();
 	for (;;) {
 		Working = true;
+		// Transfert = true;
 		// Serial.println("> getSensorData()");
 		// CurrentProbe.Probe.CO2.Set( rand() % 100 + 415);
     	// Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
@@ -315,12 +328,13 @@ void getSensorData(void * parameter) {
 		}
 		if(i2cbus.SCD40){
 			readSCD40();
-		} else {Serial.println("+---> Missing CO2 sensor!");
+		} else {Serial.println("+---> Missing SCD40[CO2] sensor!");
 		}
 		if(i2cbus.VEML7700){
 			readVEML7700();
 		} else {Serial.println("+---> Missing Lux sensor!");
 		}
+		// Transfert = false;
 		Working = false;
 		vTaskDelay( 5000 );
 	}

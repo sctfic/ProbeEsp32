@@ -80,7 +80,6 @@ void displayTransfert(bool color){
 	// les 2 petites fleches en bas
 	int x = 113;
 	int y = 53;
-	display.fillRect(x, y, 28, 11, BLACK);
 	if (Transfert){
 		// Left Top arrow
 		display.drawRect(x+1, y+2, 9, 3, WHITE);
@@ -104,9 +103,9 @@ void displayTransfert(bool color){
 
 		display.drawFastHLine(x+2,y+3,7,color ? WHITE : BLACK);
 		display.drawFastHLine(x+6,y+7,7,color ? BLACK : WHITE);
-
+	} else {
+		display.fillRect(x, y, 28, 11, BLACK);
 	}
-	// display.setCursor(x,y+13);
 }
 void displayBatteryLevel(int batteryLevel){
 		display.fillRect(120, 0, 8, 16, BLACK);
@@ -185,7 +184,7 @@ void displaySensor(){
 }
 void displayDeepSleep(){
 	if (CurrentProbe.Settings.DisplayDuringDeepSleep){
-		display.fillRect(0, 0, 120, 16, BLACK);
+		display.fillRect(0, 0, 98, 16, BLACK);
 		display.setCursor(0, 0);
 		display.println("DeepSleep");
 		display.print(" Low Power...");
