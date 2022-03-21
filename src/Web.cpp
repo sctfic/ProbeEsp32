@@ -54,7 +54,9 @@ void setup_Routing(){
 		int n = WiFi.scanNetworks();
 		String scan = "";
 		for (int i = 0; i < n; ++i) {
-			scan = scan + ",";
+			if (i) {
+				scan = scan + ",";
+			}		
 			scan = scan + "\"" +WiFi.SSID(i)+ "\"";
 			// Print SSID and RSSI for each network found
 			Serial.print(i + 1);

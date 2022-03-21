@@ -165,13 +165,22 @@ void displayNetwork(){
 	displaySignal(CurrentProbe.Network.Strength.Value());
 }
 void displaySensor(){
+	char degreC[3] = {176,67,0};
+	char degreF[3] = {176,70,0};
 	display.setCursor(30,SCREEN_BLUE_0+4);
 	display.printf("Temp:%.1f",CurrentProbe.Probe.Temperature.Raw);
 	// Serial.printf("Temp:%s\n",CurrentProbe.Probe.Temperature.toString().c_str());
-	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+2);
-	display.write(248);
-	display.setCursor(display.getCursorX(),SCREEN_BLUE_0+4);
-	display.write(67);
+	// Serial.print((int)CurrentProbe.Probe.Temperature.Def.Unit[0]);
+	// Serial.print((int)CurrentProbe.Probe.Temperature.Def.Unit[1]);
+	// Serial.print((int)CurrentProbe.Probe.Temperature.Def.Unit[2]);
+	if (CurrentProbe.Probe.Temperature.Def.Unit[1] == 176){
+		display.setCursor(display.getCursorX(),SCREEN_BLUE_0+2);
+		display.write(248);
+		display.setCursor(display.getCursorX(),SCREEN_BLUE_0+4);
+		display.write(CurrentProbe.Probe.Temperature.Def.Unit[2]);
+	} else {
+		display.print(CurrentProbe.Probe.Temperature.Def.Unit.c_str());
+	}
 	display.setCursor(30,SCREEN_BLUE_0+4+9);
 	display.printf("Press:%s",CurrentProbe.Probe.Pressure.toString().c_str());
 	// Serial.printf("Press:%s\n",CurrentProbe.Probe.Pressure.toString().c_str());

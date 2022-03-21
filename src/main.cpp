@@ -28,7 +28,7 @@ void print_wakeup_reason(){
 
 void uploaderDeepSleep(void * parameter){
 	for (;;) {
-		int i = 150; // 600 = 60 sec
+		int i = 150, duree; // 600 = 60 sec
 		DeepSleepNow = false;
 		while (!WIFI_CONNECTED && i>0 || !DataReady) {
 			vTaskDelay( 100 );
@@ -40,23 +40,26 @@ void uploaderDeepSleep(void * parameter){
 		} else {
 			Serial.println("+---> [ERROR] uploadData require wifi !");
 		}
+		while (Working || Transfert){
+			vTaskDelay(100);
+			// Serial.print("-");
+		}
+		duree = ((CurrentProbe.Settings.MeasurementInterval) * 1000 - (millis()-startTime));
 		if(CurrentProbe.Settings.EnableDeepSleep && IgnoreDeepSleep <= 0){
-			Serial.printf("+---> GO deep_sleep_start(%i) ",CurrentProbe.Settings.MeasurementInterval);
-			while (Working || Transfert){
-				vTaskDelay(100);
-				// Serial.print("-");
-			}
-			// Serial.println(" !");
-			// DataReady = false;
-			// Serial.printf("Duration %i Sec",((millis()-startTime)));
-
-			esp_sleep_enable_timer_wakeup(((CurrentProbe.Settings.MeasurementInterval) * 1000 - (millis()-startTime)) * 1000);
 			displayDeepSleep();
-			esp_deep_sleep_start();
+			xSemaphoreTake( mutex, portMAX_DELAY );
+			if (duree > 0){
+				Serial.printf("+---> GO deepSleep(%ims) \n",duree );
+				esp_sleep_enable_timer_wakeup(duree * 1000);
+				esp_deep_sleep_start();
+			}
+			xSemaphoreGive( mutex );
 		} else {
 			// il n'y a pas de mise en veille donc on pattiente avant les prochaines mesures
-			vTaskDelay(((CurrentProbe.Settings.MeasurementInterval) * 1000 - (millis()-startTime)) * 1000);
+			Serial.printf("+---> Ignore deepSleep(%ims) \n",duree );
+			vTaskDelay(duree);
 			IgnoreDeepSleep -= CurrentProbe.Settings.MeasurementInterval;
+			startTime = millis();
 		}
 	}
 }
