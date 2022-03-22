@@ -9,9 +9,9 @@
 // Initialize SPIFFS
 void initSPIFFS() {
   if (!SPIFFS.begin(true)) {
-    Serial.println("An error has occurred while mounting SPIFFS");
+    Serial.println("+---> [ERROR] has occurred while mounting SPIFFS");
   }
-  Serial.println("SPIFFS mounted successfully");
+  Serial.println("> SPIFFS mounted successfully");
 }
 
 
@@ -71,7 +71,7 @@ void loadJsonSettings(const char *path){
 
 	if(SettingsJson.length() > 2 ){
 		if((SettingsJson[0]=='{' && SettingsJson[SettingsJson.length()-1]=='}') || (SettingsJson[0]=='[' && SettingsJson[SettingsJson.length()-1]==']')){
-			Serial.printf("Loading SettingsJson [%i]\n",SettingsJson.length());
+			Serial.printf("> Loading SettingsJson [%i]\n",SettingsJson.length());
 			CurrentProbe.Settings = SETTINGS::fromJson(SettingsJson);
 			// Serial.println("CurrentProbe.Settings.Probe.toJson().c_str()");
 			// Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
@@ -81,11 +81,11 @@ void loadJsonSettings(const char *path){
 
 		} else {
 			Serial.println(SettingsJson.c_str());
-			Serial.println("====== WRONG JSON, Removing file ! ======");
+			Serial.println("+---> [ERROR] WRONG JSON, Removing file ! ======");
 			SPIFFS.remove(path);
 		}
 	} else {
-		Serial.println("====== MISSING JSON ! ======");
+		Serial.println("+---> [ERROR] MISSING JSON ! ======");
 	}
 }
 

@@ -29,7 +29,7 @@ void heartPulse(void * parameter){
 	ledcSetup(LD1CHANNEL, FREQ, RESOLUTION);
 	// attach the channel to the GPIO to be controlled
 	ledcAttachPin(Pin.LD1, LD1CHANNEL);
-		Serial.println("init PIN");
+		Serial.println("> init PIN");
 
 	// ECG of earth, use 10ms
 	// double pulse[]={0,0,0,0,0,0,7.2,15.5,22.9,29.0,33.4,35.9,35.5,29.5,18.8,0,0,0,0,0,-18.2,-36.4,182,182,-72,-36.4,0,0,0,0,0,0,10.1,21.7,32.1,40.6,46.8,50.3,50.9,45.5,28.9,0,0,0,0,0,0,0,0,0,0};
