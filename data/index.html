@@ -715,7 +715,7 @@
 			box-shadow: 0 0 6px grey;
 			text-shadow: 0 2px 3px red
 		}
-		input[type=text]:invalid + span::before {
+		/* input[type=text]:invalid + span::before {
 			position: absolute;
 			zoom: 2;
 			left: -15px;
@@ -730,7 +730,7 @@
 			margin-top: -5px;
 			content: '✓';
 			color: green;
-		}
+		} */
 		input:required:placeholder-shown {
 			border:1px solid  red;
 			box-shadow: 0 0 6px grey;
@@ -757,6 +757,32 @@
 			display: block;
 			opacity: 1;
 			transition:  opacity 0s linear 1s;
+		}
+		#Tag {
+			display: none;
+		}
+		#Tags {
+			display: block;
+			padding-left: 12px;
+		}
+		.Tags {
+			padding-left: 12px;
+		}
+		.Tags input[type=checkbox]:checked + span {
+			position: absolute;
+			margin-left: -8px;
+			margin-top: -4px;
+			zoom: 1.5;
+			transform: rotate(90deg);
+			transition:  rotate 0s linear 1s;
+		}
+		.Tags input[type=checkbox] + span {
+			position: absolute;
+			margin-left: -7px;
+			margin-top: -5px;
+			zoom: 1.5;
+			transform: rotate(0deg);
+			transition:  rotate 0s linear 1s;
 		}
 	</style>
 
@@ -791,6 +817,27 @@
 			<!-- <input id="SSID" class="u-full-width required" placeholder="Connect to Network : SSID" name="SSID" type="text" value="" required pattern="|(.{3,32})"><br/> -->
 			<input id="PWD" class="u-full-width" placeholder="PassWord for this network" name="PWD" type="text" value="" pattern="|(.{0,64})"><span></span><br/>
 			<input id="Hostname" class="u-full-width required" placeholder="Chose HostName on this network" name="Hostname" type="text" value="ESP32_Probe_0" required pattern="|(.{3,32})"><span></span><br/>
+			<label class="Tags" for="Tag"><input id="Tag" Name="Tag" type="checkbox" checked onchange="toogleTags(this)" /><span>›</span>Complement d'infos de cette Sonde</label>
+			<span id="Tags">
+				<div class="row" >
+					<div class="three columns">
+						<label>area</label>
+						<input id="area" class="u-full-width" placeholder="serramoune - home - garden - forest" name="area" type="text" value="home">
+					</div>
+					<div class="three columns">
+						<label>location</label>
+						<input id="location" class="u-full-width" placeholder="indoor - outdoor - soil" name="location" type="text" value="indoor">
+					</div>
+					<div class="three columns">
+						<label>room</label>
+						<input id="room" class="u-full-width" placeholder="greenhouses - bedroom - kitchens" name="room" type="text" value="livingroom">
+					</div>
+					<div class="three columns">
+						<label>type</label>
+						<input id="type" class="u-full-width" placeholder="soilMoisture - whaterTemp" name="type" type="text" value="TEST">
+					</div>
+				</div>
+			</span>
 			<label class="dhcp"><input id="DHCP" Name="DHCP" type="checkbox" checked onchange="toogleIpFixe(this)"/>IP Automatic (by DHCP)
 				<span class="ipFixe">
 					<div class="row"><span class="two columns">IP</span><input id="IP" class="ten columns" placeholder="Ip-Address (Ex: 192.168.1.32)" name="IP" type="text" value="192.168.1.xxx" pattern="^|(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$"><span></span><br/></div>
@@ -843,6 +890,10 @@
 			document.getElementById("DNS1").disabled = input.checked;
 			document.getElementById("DNS2").disabled = input.checked;
 		}
+		function toogleTags(input){
+			console.log(input.checked, document.getElementById("Tags").style.display );
+			document.getElementById("Tags").style.display = input.checked?"block":"none";
+		}
 		function toogleDisplay(input){
 			document.getElementById("DisplayDuringDeepSleep").disabled = !input.checked;
 		}
@@ -870,6 +921,7 @@
 				document.getElementById("SSID").value = Settings.Lan.SSID;
 				document.getElementById("PWD").value = Settings.Lan.PWD;
 				document.getElementById("Hostname").value = Settings.Lan.Hostname;
+				document.getElementById("Tags").value = Settings.Lan.Tags;
 				document.getElementById("DHCP").checked = Settings.Lan.DHCP;
 				document.getElementById("IP").value = Settings.Lan.IP;
 				document.getElementById("Mask").value = Settings.Lan.Mask;

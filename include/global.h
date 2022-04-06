@@ -186,6 +186,10 @@ class SETTINGS{
 		bool DisplayDuringDeepSleep;
 		int MeasurementInterval;
 		std::string SrvDataBase2Post;
+		std::string area;
+		std::string location;
+		std::string room;
+		std::string type;
 		NETWORK Lan;
 		PROBE Probe;
     	// std::string SSID; //'MartinLopez',

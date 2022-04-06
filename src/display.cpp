@@ -234,9 +234,9 @@ void displayASCII(char * str){
 			display.write((int)str[i]);
 			break;
 		}
-	Serial.print(" ");
+	// Serial.print(" ");
 	}
-	Serial.println("");
+	// Serial.println("");
 }
 void displaySensor(){
 	display.setCursor(30,SCREEN_BLUE_0+4);

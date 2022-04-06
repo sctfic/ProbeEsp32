@@ -28,7 +28,7 @@ bool check_WiFi_Available(){
         CurrentProbe.Network.SSID           = WiFi.softAPSSID().c_str();
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.softAPSubnetCIDR()).c_str() ;
         CurrentProbe.Network.Gateway        = "";
-        CurrentProbe.Network.DNS1            = WiFi.dnsIP().toString().c_str();
+        CurrentProbe.Network.DNS1           = WiFi.dnsIP().toString().c_str();
 	    WIFI_CONNECTED = false;
 		return (CurrentProbe.Network.IP != "0.0.0.0");
     }

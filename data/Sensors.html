@@ -786,7 +786,7 @@
 		<input id="TemperatureCoef" name="TemperatureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="TemperatureOffset" name="TemperatureOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="TemperatureUnit" name="TemperatureUnit" class="four columns" placeholder="Unite de mesure Temperature" type="text" value="K" required pattern="^|"> -->
-		<select id="TemperatureUnit" class="two columns" name="TemperatureUnit" size="1" required>
+		<select id="TemperatureUnit" class="two columns" name="TemperatureUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="K">Kelvin (SI)</option>
 			<option value="°C">Celcius</option>
 			<option value="°F">Fahrenheit</option>
@@ -796,24 +796,27 @@
 		<input id="PressureCoef" name="PressureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="0.01" required pattern="^|">
 		<input id="PressureOffset" name="PressureOffset" class="four columns" placeholder="" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="PressureUnit" name="PressureUnit" class="four columns" placeholder="Unite de mesure pression atmospherique" type="text" value="hPa" required pattern="^|"> -->
-		<select id="PressureUnit" class="two columns" name="PressureUnit" size="1" required>
+		<select id="PressureUnit" class="two columns" name="PressureUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="Pa">Pascal (SI)</option>
 			<option value="hPa">hPa</option>
 			<option value="Bar">Bar</option>
+			<option value="mBar">milliBar</option>
+			<option value="atm">atmosphere</option>
+			<option value="mmHg">mm de mercure</option>
 		</select>
 	<span></span></div>
 	<div class="row"><span class="two columns">Humidity</span>
 		<input id="HumidityCoef" name="HumidityCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="HumidityOffset" name="HumidityOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="HumidityUnit" name="HumidityUnit" class="four columns" placeholder="Unite de mesure Humidite" type="text" value="%" required pattern="^|"> -->
-		<select id="HumidityUnit" class="two columns" name="HumidityUnit" size="1" required>
+		<select id="HumidityUnit" class="two columns" name="HumidityUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="%">%</option>
 		</select>	<span></span></div>
 	<div class="row"><span class="two columns">CO2</span>
 		<input id="CO2Coef" name="CO2Coef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="CO2Offset" name="CO2Offset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="CO2Unit" name="CO2Unit" class="four columns" placeholder="Unite de mesure CO2" type="text" value="ppm" required pattern="^|"> -->
-		<select id="CO2Unit" class="two columns" name="CO2Unit" size="1" required>
+		<select id="CO2Unit" class="two columns" name="CO2Unit" size="1" onchange="forceEquation(this)" required>
 			<option value="ppm">ppm</option>
 			<option value="cm³/m³">cm³/m³</option>
 		</select>
@@ -822,7 +825,7 @@
 		<input id="LUXCoef" name="LUXCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="LUXOffset" name="LUXOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="LUXUnit" name="LUXUnit" class="four columns" placeholder="Unite de mesure lumineuse" type="text" value="lux" required pattern="^|"> -->
-		<select id="LUXUnit" class="two columns" name="LUXUnit" size="1" required>
+		<select id="LUXUnit" class="two columns" name="LUXUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="lux">lux</option>
 			<option value="lm/m²">lm/m²</option>
 		</select>
@@ -831,7 +834,7 @@
 		<input id="UVCoef" name="UVCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="UVOffset" name="UVOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
 		<!-- <input id="UVUnit" name="UVUnit" class="four columns" placeholder="Unite de mesure UV" type="text" value="index" required pattern="^|"> -->
-		<select id="UVUnit" class="two columns" name="UVUnit" size="1" required>
+		<select id="UVUnit" class="two columns" name="UVUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="index">UV index</option>
 			<option value="w/m²">watt/m²</option>
 		</select>
@@ -847,6 +850,31 @@
 		</div>
 	</body>
 	<script>
+		function forceEquation(obj){
+			switch (obj.value) {
+				case "hPa":
+					a=0.01; b=0; break;
+				case "Bar":
+					a=0.00001; b=0; break;
+				case "mBar":
+					a=0.001; b=0; break;
+				case "atm":
+					a=0.00000986923; b=0; break;
+				case "mmHg":
+					a=0.0075006156130264; b=0; break;
+				case "°F":
+					a=9/5; b=32; break;
+				case "K":
+					a=1; b=273.15; break;
+				default:
+					a=1;b=0;
+				break;
+			}
+			obj.previousElementSibling.previousElementSibling.value = a;
+			// console.log(a,obj.previousElementSibling.previousElementSibling.value);
+			obj.previousElementSibling.value = b;
+			// console.log(b,obj.previousElementSibling.value);
+		}
 		function ajax(url,callback){
 			var xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = callback

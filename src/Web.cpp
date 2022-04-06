@@ -103,8 +103,14 @@ void setup_Routing(){
 		CurrentProbe.Settings.Lan.Gateway 			= request->arg("Gateway").c_str();
 		CurrentProbe.Settings.Lan.DNS1 				= request->arg("DNS1").c_str();
 		CurrentProbe.Settings.Lan.DNS2 				= request->arg("DNS2").c_str();
-		CurrentProbe.Settings.SrvDataBase2Post	= request->arg("SrvDataBase2Post").c_str();
+		CurrentProbe.Settings.SrvDataBase2Post		= request->arg("SrvDataBase2Post").c_str();
 		CurrentProbe.Settings.MeasurementInterval	= str2int(request->arg("MeasurementInterval").c_str());
+
+		CurrentProbe.Settings.area 			= request->arg("area").c_str();
+		CurrentProbe.Settings.location 		= request->arg("location").c_str();
+		CurrentProbe.Settings.room 			= request->arg("room").c_str();
+		CurrentProbe.Settings.type 			= request->arg("type").c_str();
+
 
 		// for(int i=0;i<paramsNr;i++){
 		// 	AsyncWebParameter* p = request->getParam(i);
