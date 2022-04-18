@@ -7,6 +7,7 @@
 	<style type="text/css">
 		html {
 			font-size: 62.5%;
+
 		}
 				body {
 			margin-left: auto;
@@ -782,6 +783,12 @@
 						<a class="three columns button" href="/data">View Data {Json}</a>
 					</span>
 <form action='./Sensors/apply' method="GET" enctype="text/plain">
+	<div class="row"><span class="two columns">GPS</span>
+		<input id="longitude" name="Longitude" class="three columns" placeholder="Longitude" type=number step=any required pattern="^|">
+		<input id="latitude" name="Latitude" class="three columns" placeholder="Latitude" type=number step=any required pattern="^|">
+		<input id="altitude" name="Altitude" class="two columns" placeholder="Altitude(m)" type=number step=any required pattern="^|">
+		<!-- <button class="two columns button-primary" onclick="getLocation();" style="padding:0px 0px"><- Detect</button> -->
+	<span></span></div>
 	<div class="row"><span class="two columns">Temperature</span>
 		<input id="TemperatureCoef" name="TemperatureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
 		<input id="TemperatureOffset" name="TemperatureOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
@@ -850,6 +857,23 @@
 		</div>
 	</body>
 	<script>
+		function getLocation() {
+			if (navigator.geolocation) {
+				console.log('getCurrentPosition');
+				navigator.geolocation.getCurrentPosition(showPosition, errorPosition);
+			} else { 
+				console.log("Geolocation is not supported by this browser.");
+			}
+		}
+		function showPosition(position) {
+			console.log('position',position);
+			document.getElementById("longitude").value = position.coords.latitude;
+			document.getElementById("latitude").value  = position.coords.longitude;
+			document.getElementById("altitude").value  = position.coords.altitude;
+		}
+		function errorPosition(error) {
+			console.log('error',error);
+		}
 		function forceEquation(obj){
 			switch (obj.value) {
 				case "hPa":
@@ -877,7 +901,7 @@
 		}
 		function ajax(url,callback){
 			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.onreadystatechange = callback
+			xmlhttp.onreadystatechange = callback;
 			xmlhttp.open("GET", url, true);
 			xmlhttp.send();
 		}
@@ -903,7 +927,29 @@
 				document.getElementById("UVCoef").value				= Settings.Probe.UV.Def.Coef
 				document.getElementById("UVOffset").value			= Settings.Probe.UV.Def.Offset
 				document.getElementById("UVUnit").value				= Settings.Probe.UV.Def.Unit
+				if (Settings.gps.longitude==0 && Settings.gps.latitude==0 && Settings.gps.altitude==0) {
+					console.log(Settings.gps.longitude,Settings.gps.latitude,Settings.gps.altitude);
+					getLocation();
+				} else {
+					document.getElementById("longitude").value = Settings.gps.longitude
+					document.getElementById("latitude").value  = Settings.gps.latitude
+					document.getElementById("altitude").value  = Settings.gps.altitude
+				}
 			}
 		});
+
+
+
+
+		function getElevation(event)
+{var clickedLocation=event.latlng;
+	var locations=[];
+	locations.push(clickedLocation);
+	console.log(clickedLocation);
+	outputDiv.innerHTML="Please Wait...";
+$.ajax({url:"https://elevation-api.io/api/elevation?key="+elevationapikey+"&resolution=90&points=("+clickedLocation.lat+","+clickedLocation.lng+")",success:function(result){console.log(result);
+	
+	https://elevation-api.io/api/elevation?key=wB26f6f3z43hiwLDdbRBOyCHcuK2oc&resolution=90&points=(43.2130308242996,-0.4664388298988343)
+	
 	</script>
 </html>

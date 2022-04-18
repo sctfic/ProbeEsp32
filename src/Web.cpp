@@ -95,6 +95,7 @@ void setup_Routing(){
 		} else {
 			CurrentProbe.Settings.Lan.DHCP 			= false;
 		}
+
 		CurrentProbe.Settings.Lan.Hostname 			= request->arg("Hostname").c_str();
 		CurrentProbe.Settings.Lan.SSID 				= request->arg("SSID").c_str();
 		CurrentProbe.Settings.Lan.PWD 				= request->arg("PWD").c_str();
@@ -133,9 +134,12 @@ void setup_Routing(){
 	server.on("/Sensors/apply", HTTP_GET, [](AsyncWebServerRequest *request){
 		IgnoreDeepSleep = 60;
 		Transfert = true;
-		// int paramsNr = request->params();
 		Serial.println(request->url());
-		
+
+		CurrentProbe.Settings.gps.longitude = std::stod(request->arg("Longitude").c_str());
+		CurrentProbe.Settings.gps.latitude = std::stod(request->arg("Latitude").c_str());
+		CurrentProbe.Settings.gps.altitude = std::stoi(request->arg("Altitude").c_str());
+
 		CurrentProbe.Settings.Probe.Temperature.Def	= SENSOR_DEF(
 			std::stod(request->arg("TemperatureCoef").c_str()),
 			std::stod(request->arg("TemperatureOffset").c_str()),

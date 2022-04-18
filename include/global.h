@@ -165,6 +165,13 @@ class BATTERY{
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(BATTERY, Voltage,Capacity)
 
 	};
+class GPS{
+    public:
+		double longitude;
+		double latitude;
+		int altitude;
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(GPS, longitude, latitude, altitude)
+	};
 class ENERGY{
     public:
 		POWERSUPPLY PowerSupply;
@@ -191,6 +198,7 @@ class SETTINGS{
 		std::string room;
 		std::string type;
 		NETWORK Lan;
+		GPS gps;
 		PROBE Probe;
     	// std::string SSID; //'MartinLopez',
     	// std::string PWD; //'Wifi Key',
@@ -208,7 +216,7 @@ class SETTINGS{
 		// SENSOR_DEF UV = {1,0,"index"};
         // NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,SSID,PWD,Hostname,DHCP,IP,Mask,Gateway,DNS1,DNS2,Temperature,Pressure,Humidity,CO2,LUX,UV)
         // NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,Lan,Temperature,Pressure,Humidity,CO2,LUX,UV)
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,Lan,Probe)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,gps,Lan,Probe)
 		//"{...}" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;

@@ -239,15 +239,26 @@ void displayASCII(char * str){
 	// Serial.println("");
 }
 void displaySensor(){
-	display.setCursor(30,SCREEN_BLUE_0+4);
-	display.print("Temp:");
-	displayASCII((char*)CurrentProbe.Probe.Temperature.toString().c_str());
-	display.setCursor(30,SCREEN_BLUE_0+4+9);
-	display.print("Press:");
-	displayASCII((char*)CurrentProbe.Probe.Pressure.toString().c_str());
-	display.setCursor(30,SCREEN_BLUE_0+4+18);
-	display.print("Lux:");
-	displayASCII((char*)CurrentProbe.Probe.LUX.toString().c_str());
+	display.setCursor(28,SCREEN_BLUE_0+4);
+		display.print("Temp:");
+	display.setCursor(64,SCREEN_BLUE_0+4);
+		displayASCII((char*)CurrentProbe.Probe.Temperature.toString().c_str());
+	display.setCursor(28,SCREEN_BLUE_0+4+9);
+		display.print("Press:");
+	display.setCursor(64,SCREEN_BLUE_0+4+9);
+		displayASCII((char*)CurrentProbe.Probe.Pressure.toString().c_str());
+	display.setCursor(28,SCREEN_BLUE_0+4+9*2);
+		display.print("Humid:");
+	display.setCursor(64,SCREEN_BLUE_0+4+9*2);
+		displayASCII((char*)CurrentProbe.Probe.Humidity.toString().c_str());
+	display.setCursor(28,SCREEN_BLUE_0+4+9*3);
+		display.print("CO2:");
+	display.setCursor(64,SCREEN_BLUE_0+4+9*3);
+		displayASCII((char*)CurrentProbe.Probe.CO2.toString().c_str());
+	display.setCursor(28,SCREEN_BLUE_0+4+9*4);
+		display.print("Lux:");
+	display.setCursor(64,SCREEN_BLUE_0+4+9*4);
+		displayASCII((char*)CurrentProbe.Probe.LUX.toString().c_str());
 
 	// display.setCursor(30,SCREEN_BLUE_0+4+27);
 	// display.printf("Hum:%.1f%%",CurrentProbe.Probe.Humidity.Raw);

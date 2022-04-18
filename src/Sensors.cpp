@@ -6,10 +6,14 @@
 // #include <Adafruit_Sensor.h>
 // #include <Adafruit_BME280.h>
 #include <Adafruit_BMP280.h>
+#include <Adafruit_BME280.h>
+#include <SensirionI2CScd4x.h>
 #include "Adafruit_VEML7700.h"
 
-
 Adafruit_BMP280 bmp; // I2C
+Adafruit_BME280 bme; // I2C
+SensirionI2CScd4x scd4x; // I2C
+Adafruit_VEML7700 veml = Adafruit_VEML7700();
 
 // // PINs
 // #define BATTERY_PIN 35
@@ -20,9 +24,6 @@ Adafruit_BMP280 bmp; // I2C
 const int  FREQ = 5000;
 const int  LD1CHANNEL = 0;
 const int  RESOLUTION = 8;
-
-Adafruit_VEML7700 veml = Adafruit_VEML7700();
-
 
 void heartPulse(void * parameter){
 	// configure LED PWM functionalitites
@@ -58,7 +59,8 @@ double getBatteryCapacity(double VBat, double VPower){
 		// Charging !
 		return 101;
 	} else {
-		return (int)lround(-47391.44 + 68111.053*VBat -38668.575*pow(VBat,2) + 10828.2011*pow(VBat,3) + -1494.5436*pow(VBat,4) + 81.37904*pow(VBat,5));
+		return (int)lround(-43413.38 + 62524.838*VBat -35561.709*pow(VBat,2) + 9972.1646*pow(VBat,3) + -1377.6284*pow(VBat,4) + 75.04396*pow(VBat,5)); // 0% a 2.82V
+		// return (int)lround(-47391.44 + 68111.053*VBat -38668.575*pow(VBat,2) + 10828.2011*pow(VBat,3) + -1494.5436*pow(VBat,4) + 81.37904*pow(VBat,5)); // 0% a 2.76V
 	}
 }
 double getBatteryVoltage(){
@@ -77,10 +79,7 @@ double getPowerVoltage(){
 }
 bool initVEML7700(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
-	if (!veml.begin()) {
-	    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                      "try a different address!"));
-	} else {
+	if (veml.begin()) {
 		// Default settings from datasheet.
 		veml.powerSaveEnable(false);
 		// veml.setGain(VEML7700_GAIN_1_4);
@@ -98,10 +97,7 @@ bool initVEML7700(){
 }
 bool initBMP280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
-	if (!bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID)) {
-	    Serial.println(F("Could not find a valid BMP280 sensor, check wiring or "
-                      "try a different address!"));
-	} else {
+	if (bmp.begin(BMP280_ADDRESS_ALT, BMP280_CHIPID)) {
 		// Default settings from datasheet.
   		bmp.setSampling(Adafruit_BMP280::MODE_FORCED,     /* Operating Mode. */
 						Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
@@ -116,12 +112,72 @@ bool initBMP280(){
 }
 bool initBME280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
-
+	bool status = bme.begin(0x76);
     xSemaphoreGive( mutex );
-	return false;
+	return status;
 }
+
+// void printUint16Hex(uint16_t value) {
+//     Serial.print(value < 4096 ? "0" : "");
+//     Serial.print(value < 256 ? "0" : "");
+//     Serial.print(value < 16 ? "0" : "");
+//     Serial.print(value, HEX);
+// }
+// void printSerialNumber(uint16_t serial0, uint16_t serial1, uint16_t serial2) {
+//     Serial.print("Serial SCD40 : 0x");
+//     printUint16Hex(serial0);
+//     printUint16Hex(serial1);
+//     printUint16Hex(serial2);
+//     Serial.println();
+// }
 bool initSCD40(){
+	// docs des functions
+	// https://sensirion.github.io/python-i2c-scd/_modules/sensirion_i2c_scd/scd4x/device.html
+	// https://sensirion.com/products/catalog/SCD40/
+	// https://github.com/Sensirion/arduino-i2c-scd4x/blob/master/examples/exampleUsage/exampleUsage.ino
 	xSemaphoreTake( mutex, portMAX_DELAY );
+    uint16_t error;
+    char errorMessage[256];
+    scd4x.begin(Wire);
+    // stop potentially previously started measurement
+    error = scd4x.stopPeriodicMeasurement();
+	error = scd4x.setSensorAltitude(CurrentProbe.Settings.gps.altitude);
+	// scd4x.performForcedRecalibration();
+    // if (error) {
+    //     Serial.print("Error trying to execute stopPeriodicMeasurement(): ");
+    //     errorToString(error, errorMessage, 256);
+    //     Serial.println(errorMessage);
+    // }
+
+    // uint16_t serial0;
+    // uint16_t serial1;
+    // uint16_t serial2;
+    // error = scd4x.getSerialNumber(serial0, serial1, serial2);
+    // if (error) {
+    //     Serial.print("Error trying to execute getSerialNumber(): ");
+    //     errorToString(error, errorMessage, 256);
+    //     Serial.println(errorMessage);
+    // } else {
+    //     printSerialNumber(serial0, serial1, serial2);
+    // }
+	error = scd4x.setAutomaticSelfCalibration(true);
+	if (error) {
+        Serial.print("Error trying to execute setAutomaticSelfCalibration(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    }
+    // Start Measurement
+    // error = scd4x.startPeriodicMeasurement(); // toute les 5sec
+	error = scd4x.startLowPowerPeriodicMeasurement(); // toute les 30sec
+    if (error) {
+        Serial.print("Error trying to execute startPeriodicMeasurement(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    }
+
+    Serial.println("Waiting for first measurement... (5 sec)");
+    xSemaphoreGive( mutex );
+	return true;
 
     xSemaphoreGive( mutex );
 	return false;
@@ -210,7 +266,7 @@ float calibrateVEML7700(bool wait){
 		Gain = VEML7700_GAIN_1_4;
 		IntegrationTime = VEML7700_IT_50MS;
 		pause = 50;
-	} else {
+	} else { // 60398
 		Gain = VEML7700_GAIN_1_4;
 		IntegrationTime = VEML7700_IT_25MS;
 		pause = 25;
@@ -293,17 +349,48 @@ void readBMP280(){
 void readBME280(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
 	Serial.println("+---> readBME280()");
-
+	// if (bme.takeForcedMeasurement()) {
+		CurrentProbe.Probe.Pressure.Set(bme.readPressure()); // bme.readPressure() / 100;
+		CurrentProbe.Probe.Temperature.Set( bme.readTemperature()); // bme.readTemperature();
+		CurrentProbe.Probe.Humidity.Set(bme.readHumidity()); // bme.readHumidity() / 100;
+    	Serial.printf("|   +---> Pressure : %s\n",CurrentProbe.Probe.Pressure.toString().c_str());
+    	Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
+    	Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
+	// } else {
+		// Serial.println("Forced measurement failed!");
+	// }
     xSemaphoreGive( mutex );
 }
 void readSCD40(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
 	Serial.println("+---> readSCD40()");
+	uint16_t error;
+    char errorMessage[256];
+    uint16_t CO2;
+    float temperature;
+    float humidity;
+    error = scd4x.readMeasurement(CO2, temperature, humidity);
 
+    if (error) {
+        Serial.print("Error trying to execute readMeasurement(): ");
+        errorToString(error, errorMessage, 256);
+        Serial.println(errorMessage);
+    } else if (CO2 == 0) {
+        Serial.println("Invalid sample detected, skipping.");
+    } else {
+		CurrentProbe.Probe.CO2.Set(CO2);
+		CurrentProbe.Probe.Temperature.Set(temperature);
+		CurrentProbe.Probe.Humidity.Set(humidity);
+    	Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
+    	Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
+    	Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
+    }
     xSemaphoreGive( mutex );
 }
 void getSensorData(void * parameter) {
-	i2cbus.BMP280 = initBMP280();
+	i2cbus.BMP280  = initBMP280();
+	i2cbus.BME280  = initBME280();
+	i2cbus.SCD40   = initSCD40();
 	i2cbus.VEML7700 = initVEML7700();
 	for (;;) {
 		Working = true;
@@ -311,8 +398,6 @@ void getSensorData(void * parameter) {
 		Serial.println("+---> readSensors()");
 		// CurrentProbe.Probe.CO2.Set( rand() % 100 + 415);
     	// Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
-		// CurrentProbe.Probe.Humidity.Set( rand() % 40 + 30);
-    	// Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
 		CurrentProbe.Energy.PowerSupply.Voltage.Set( getPowerVoltage());
     	Serial.printf("|   +---> PowerSupply.Voltage : %s\n",CurrentProbe.Energy.PowerSupply.Voltage.toString().c_str());
 		CurrentProbe.Energy.Battery.Voltage.Set( getBatteryVoltage());
@@ -321,19 +406,23 @@ void getSensorData(void * parameter) {
     	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
 		if(i2cbus.BMP280){
 			readBMP280();
-		} else {Serial.println("+---> Missing BMP280 sensor!");
+		// } else {
+		// 	Serial.println("+---> Missing BMP280 sensor!");
 		}
 		if(i2cbus.VEML7700){
 			readVEML7700();
-		} else {Serial.println("+---> Missing Lux sensor!");
+		// } else {
+		// 	Serial.println("+---> Missing Lux sensor!");
 		}
 		if(i2cbus.BME280){
 			readBME280();
-		} else {Serial.println("+---> Missing BME280 sensor!");
+		// } else {
+		// 	Serial.println("+---> Missing BME280 sensor!");
 		}
 		if(i2cbus.SCD40){
 			readSCD40();
-		} else {Serial.println("+---> Missing SCD40[CO2] sensor!");
+		// } else {
+		// 	Serial.println("+---> Missing SCD40[CO2] sensor!");
 		}
 		// Transfert = false;
 		Working = false;
