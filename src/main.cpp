@@ -138,7 +138,7 @@ void setup() {
 		Serial.print("+---> ");
 		Serial.print(CurrentProbe.Network.Hostname.c_str());
 		Serial.print(" <---> ");
-		Serial.print(CurrentProbe.Network.SSID.c_str());
+		Serial.print(CurrentProbe.Network.Wifi.SSID.c_str());
 		Serial.print(" [");
 		Serial.print(CurrentProbe.Network.Strength.toString().c_str());
 		Serial.println("]");
@@ -165,15 +165,15 @@ void loop() {
 			Serial.print(WiFi.RSSI(i));
 			Serial.print(")");
 			Serial.println((WiFi.encryptionType(i) == WIFI_AUTH_OPEN)?" " : "*");
-			Serial.printf("%s == %s (%i)", WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str(), strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str()));
+			Serial.printf("%s == %s (%i)", WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.Wifi.SSID.c_str(), strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.Wifi.SSID.c_str()));
 
-			if (strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.SSID.c_str()) == 0){
+			if (strcmp(WiFi.SSID(i).c_str(), CurrentProbe.Settings.Lan.Wifi.SSID.c_str()) == 0){
 				WiFi.reconnect();
 				Serial.println("> Wifi");
 				Serial.print("+---> ");
 				Serial.print(CurrentProbe.Network.Hostname.c_str());
 				Serial.print(" <---> ");
-				Serial.print(CurrentProbe.Network.SSID.c_str());
+				Serial.print(CurrentProbe.Network.Wifi.SSID.c_str());
 				Serial.print(" [");
 				Serial.print(CurrentProbe.Network.Strength.toString().c_str());
 				Serial.println("]");
@@ -186,9 +186,8 @@ void loop() {
 				Serial.println(" <---> www");
 				
 			}
-			
 		}
-		delay(10000);
+		delay(2000);
 		Working = false;
 	}
 	delay(1000);

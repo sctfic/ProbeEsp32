@@ -6,6 +6,7 @@
 
 #include "SPIFFS.h"
 #include "global.h"
+#include "sensors.h"
 #include "fileSystem.h"
 #include "Web.h"
 
@@ -97,8 +98,8 @@ void setup_Routing(){
 		}
 
 		CurrentProbe.Settings.Lan.Hostname 			= request->arg("Hostname").c_str();
-		CurrentProbe.Settings.Lan.SSID 				= request->arg("SSID").c_str();
-		CurrentProbe.Settings.Lan.PWD 				= request->arg("PWD").c_str();
+		CurrentProbe.Settings.Lan.Wifi.SSID 		= request->arg("SSID").c_str();
+		CurrentProbe.Settings.Lan.Wifi.PWD 			= request->arg("PWD").c_str();
 		CurrentProbe.Settings.Lan.IP 				= request->arg("IP").c_str();
 		CurrentProbe.Settings.Lan.Mask 				= request->arg("Mask").c_str();
 		CurrentProbe.Settings.Lan.Gateway 			= request->arg("Gateway").c_str();
@@ -124,10 +125,10 @@ void setup_Routing(){
 		writeFile(SPIFFS, SettingsPath, data);
 		Serial.println(readFile(SPIFFS, SettingsPath).c_str());
 
-		request->send(200, "application/json", data);
-
+		// request->send(200, "application/json", data);
+		request->send(SPIFFS, "/Sensors.html", "text/html");
 		Transfert = false;
-		delay(1000);
+		delay(3000);
 		ESP.restart();
 	});
 	// Save and apply new conf
@@ -185,8 +186,8 @@ void setup_Routing(){
 		writeFile(SPIFFS, SettingsPath, data);
 		Serial.println(readFile(SPIFFS, SettingsPath).c_str());
 
-		request->send(200, "application/json", data);
-
+		// request->send(200, "application/json", data);
+		request->send(SPIFFS, "/Sensors.html", "text/html");
 		Transfert = false;
 	});
     // Web Server Sensor URL
@@ -195,6 +196,36 @@ void setup_Routing(){
 		Transfert = true;
 		Serial.println(request->url());
 		request->send(SPIFFS, "/Sensors.html", "text/html");
+		Transfert = false;
+	});
+    // Web Server Sensor URL
+	server.on("/calibrate", HTTP_GET, [](AsyncWebServerRequest *request){
+		IgnoreDeepSleep = 600;	
+		Transfert = true;
+		Serial.println(request->url());
+		// const char *type = request->arg("type").c_str();
+		if(request->arg("CO2").c_str()){
+			// Temperature
+			// Pressure
+			// Humidity
+			// CO2
+			// LUX
+			// UV
+			calibrateSCD40(
+				std::stod(request->arg("Temperature").c_str()) - CurrentProbe.Probe.Temperature.Value(),
+				std::stod(request->arg("Pressure").c_str()),
+				std::stoi(request->arg("CO2").c_str())
+			);
+
+		}
+		// case 'Temperature':
+		// case 'Pressure':
+		// case 'Humidity':
+		// case 'LUX':
+		// case 'UV':
+		request->send(200, "application/json", CurrentProbe.Probe.toJson().c_str());
+
+		Serial.println(request->arg("type").c_str());
 		Transfert = false;
 	});
     server.serveStatic("/", SPIFFS, "/");

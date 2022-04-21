@@ -125,11 +125,16 @@ class PROBE {
 			return nlohmann::json::parse(jsonString, NULL, false, true).get<PROBE>();
 		};
 	};
+class WIFI {
+    public:
+    	std::string SSID; //'MartinLopez',
+    	std::string PWD; //'Wifi Key',
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(WIFI, SSID, PWD)
+	};
 class NETWORK {
     public:
     	std::string Hostname; //'ESP32NodeSensor_1',
-    	std::string SSID; //'MartinLopez',
-    	std::string PWD; //'Wifi Key',
+    	WIFI Wifi;
     	std::string MAC; //'C8:C9:A3:D2:F3:54',
     	bool DHCP = true;
     	std::string IP; //'192.168.1.16',
@@ -140,7 +145,7 @@ class NETWORK {
     	std::string DNS2; //'192.168.1.1',
     	MEASURE Strength; // { value: -67, unit: 'dBm' }
 
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(NETWORK, Hostname, SSID, PWD, MAC, DHCP, IP, CIDR, Mask, Gateway, DNS1, DNS2, Strength)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(NETWORK, Hostname, Wifi, MAC, DHCP, IP, CIDR, Mask, Gateway, DNS1, DNS2, Strength)
 		//"{...}"" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;
@@ -156,7 +161,6 @@ class POWERSUPPLY {
 		MEASURE Voltage;
 		MEASURE Current;
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(POWERSUPPLY, Voltage,Current)
-
 	};
 class BATTERY{
     public:
@@ -198,25 +202,10 @@ class SETTINGS{
 		std::string room;
 		std::string type;
 		NETWORK Lan;
+		WIFI OtherWifi[8];
 		GPS gps;
 		PROBE Probe;
-    	// std::string SSID; //'MartinLopez',
-    	// std::string PWD; //'Wifi Key',
-    	// std::string Hostname; //'ESP32NodeSensor_1',
-    	// std::string IP; //'192.168.1.32',
-    	// std::string Mask; //'255.255.255.0',
-    	// std::string Gateway; //'192.168.1.1',
-    	// std::string DNS1; //'8.8.8.8',
-    	// std::string DNS2; //'8.8.4.4',
-		// SENSOR_DEF Temperature = SENSOR_DEF(1, 0, "°C");
-		// SENSOR_DEF Pressure = {0.01,0,"hPa"};
-		// SENSOR_DEF Humidity = {1,0,"%"};
-		// SENSOR_DEF CO2 = {1,0,"ppm"};
-		// SENSOR_DEF LUX = {1,0,"lux"};
-		// SENSOR_DEF UV = {1,0,"index"};
-        // NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,SSID,PWD,Hostname,DHCP,IP,Mask,Gateway,DNS1,DNS2,Temperature,Pressure,Humidity,CO2,LUX,UV)
-        // NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,Lan,Temperature,Pressure,Humidity,CO2,LUX,UV)
-        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,gps,Lan,Probe)
+        NLOHMANN_DEFINE_TYPE_INTRUSIVE(SETTINGS, EnableDeepSleep,DisplayDuringDeepSleep,MeasurementInterval,SrvDataBase2Post,gps,Lan,OtherWifi,Probe)
 		//"{...}" = maMesure.toJson();
 		inline std::string toJson(){
 			nlohmann::json json = *this;

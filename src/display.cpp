@@ -202,7 +202,7 @@ void displaySignal(int x){
 void displayNetwork(){
 	display.setTextSize(0);
 	display.setCursor(0,0);
-	display.println(CurrentProbe.Network.SSID.c_str());
+	display.println(CurrentProbe.Network.Wifi.SSID.c_str());
 	display.print(CurrentProbe.Network.IP.c_str());
 	displaySignal(CurrentProbe.Network.Strength.Value());
 }

@@ -18,14 +18,14 @@ bool check_WiFi_Available(){
         CurrentProbe.Network.IP             = WiFi.localIP().toString().c_str();
         CurrentProbe.Network.Gateway        = WiFi.gatewayIP().toString().c_str();
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.subnetCIDR()).c_str() ;
-        CurrentProbe.Network.SSID           = WiFi.SSID().c_str();
-        CurrentProbe.Network.DNS1            = WiFi.dnsIP().toString().c_str();
+        CurrentProbe.Network.Wifi.SSID      = WiFi.SSID().c_str();
+        CurrentProbe.Network.DNS1           = WiFi.dnsIP().toString().c_str();
 	    WIFI_CONNECTED = !(WiFi.status() != WL_CONNECTED || (CurrentProbe.Network.IP == "0.0.0.0"));
 		return WIFI_CONNECTED;
     } else if (mode == WIFI_MODE_AP) {
 		// Serial.printf("WIFI_MODE_AP\n");
         CurrentProbe.Network.IP             = WiFi.softAPIP().toString().c_str();
-        CurrentProbe.Network.SSID           = WiFi.softAPSSID().c_str();
+        CurrentProbe.Network.Wifi.SSID           = WiFi.softAPSSID().c_str();
         CurrentProbe.Network.CIDR           = std::to_string(WiFi.softAPSubnetCIDR()).c_str() ;
         CurrentProbe.Network.Gateway        = "";
         CurrentProbe.Network.DNS1           = WiFi.dnsIP().toString().c_str();
@@ -34,7 +34,7 @@ bool check_WiFi_Available(){
     }
 }
 bool initWiFi() {
-	if(CurrentProbe.Settings.Lan.SSID==""){
+	if(CurrentProbe.Settings.Lan.Wifi.SSID==""){
 		Serial.println("Undefined SSID.");
 		return false;
 	}
@@ -73,8 +73,8 @@ bool initWiFi() {
 	}
 	// check_WiFi_Available();
 	// Activation Connexion wifi
-	// Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.Lan.SSID.c_str(), CurrentProbe.Settings.Lan.PWD.c_str());
-  	WiFi.begin(CurrentProbe.Settings.Lan.SSID.c_str(), CurrentProbe.Settings.Lan.PWD.c_str());
+	// Serial.printf("Wifi.bigin( %s / %s )\n",CurrentProbe.Settings.Lan.Wifi.SSID.c_str(), CurrentProbe.Settings.Lan.Wifi.PWD.c_str());
+  	WiFi.begin(CurrentProbe.Settings.Lan.Wifi.SSID.c_str(), CurrentProbe.Settings.Lan.Wifi.PWD.c_str());
 
 	while (!check_WiFi_Available()) {
 		// Serial.println((int)WiFi.localIP());
@@ -108,7 +108,7 @@ void initAccessPoint(){
 		Serial.print("*");
 		// Serial.println(WiFi.status() != WL_CONNECTED);
 		// Serial.println(CurrentProbe.Network.IP == "0.0.0.0");
-		// Serial.println(CurrentProbe.Network.SSID.c_str());
+		// Serial.println(CurrentProbe.Network.Wifi.SSID.c_str());
         // Serial.println(CurrentProbe.Network.Hostname.c_str());
 		// Serial.println(CurrentProbe.Network.IP.c_str());
 		// Serial.println(CurrentProbe.Network.CIDR.c_str());

@@ -9,7 +9,7 @@
 			font-size: 62.5%;
 
 		}
-				body {
+		body {
 			margin-left: auto;
 			margin-right: auto;
 			font-size: 1.4rem;
@@ -27,12 +27,12 @@
 			position: relative;
 		}
 		.ellipses-container {
-			width: 25rem;
-			height: 25rem;
+			width: 24rem;
+			height: 48rem;
 			border-radius: 50%;
 			margin: 0 auto;
 			position: relative;
-			top: 2rem;
+			top: 200px;
 		}
 		.ellipses-container .greeting {
 			position: absolute;
@@ -759,8 +759,16 @@
 			opacity: 1;
 			transition:  opacity 0s linear 1s;
 		}
+		.calibration {
+			height: 38px;
+			padding: 3px 6px;
+		}
+		.calibration input[type="number"],
+		.calibration input[type="text"] {
+			height: 30px;
+			padding: 3px 4px;
+		}
 	</style>
-
 </head>
 	<body>
 		<div class="background">
@@ -782,28 +790,41 @@
 						<a class="three columns button" href="/">Config Network</a>
 						<a class="three columns button" href="/data">View Data {Json}</a>
 					</span>
+<hr>
 <form action='./Sensors/apply' method="GET" enctype="text/plain">
 	<div class="row"><span class="two columns">GPS</span>
-		<input id="longitude" name="Longitude" class="three columns" placeholder="Longitude" type=number step=any required pattern="^|">
-		<input id="latitude" name="Latitude" class="three columns" placeholder="Latitude" type=number step=any required pattern="^|">
+		<input id="longitude" name="Longitude" class="four columns" placeholder="Longitude" type=number step=any required pattern="^|">
+		<input id="latitude" name="Latitude" class="four columns" placeholder="Latitude" type=number step=any required pattern="^|">
 		<input id="altitude" name="Altitude" class="two columns" placeholder="Altitude(m)" type=number step=any required pattern="^|">
-		<!-- <button class="two columns button-primary" onclick="getLocation();" style="padding:0px 0px"><- Detect</button> -->
-	<span></span></div>
-	<div class="row"><span class="two columns">Temperature</span>
-		<input id="TemperatureCoef" name="TemperatureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
-		<input id="TemperatureOffset" name="TemperatureOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="TemperatureUnit" name="TemperatureUnit" class="four columns" placeholder="Unite de mesure Temperature" type="text" value="K" required pattern="^|"> -->
-		<select id="TemperatureUnit" class="two columns" name="TemperatureUnit" size="1" onchange="forceEquation(this)" required>
-			<option value="K">Kelvin (SI)</option>
-			<option value="°C">Celcius</option>
-			<option value="°F">Fahrenheit</option>
-		</select>
-	<span></span></div>
-	<div class="row"><span class="two columns">Pressure</span>
-		<input id="PressureCoef" name="PressureCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="0.01" required pattern="^|">
-		<input id="PressureOffset" name="PressureOffset" class="four columns" placeholder="" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="PressureUnit" name="PressureUnit" class="four columns" placeholder="Unite de mesure pression atmospherique" type="text" value="hPa" required pattern="^|"> -->
-		<select id="PressureUnit" class="two columns" name="PressureUnit" size="1" onchange="forceEquation(this)" required>
+		<!-- <button class="two columns button" onclick="getLocation();" style="padding:0px 0px"><- Detect</button> -->
+	</div>
+	<br>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">Temperature</span>
+			<input id="TemperatureCoef" name="TemperatureCoef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+			<input id="TemperatureOffset" name="TemperatureOffset" class="three columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+			<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+			<select id="TemperatureUnit" class="three columns" name="TemperatureUnit" size="1" onchange="forceEquation(this)" required>
+				<option value="K">Kelvin (SI)</option>
+				<option value="°C">Celcius</option>
+				<option value="°F">Fahrenheit</option>
+			</select>
+		</div>
+		<div class="row four columns">
+				<!-- <p class="seven columns button" onclick="calibration('Temperature');" style="padding:0px 0px">Calibrate</p> -->
+				<p class="two columns"></p>
+			<input id="TemperatureReal" name="TemperatureReal" class="ten columns" placeholder="Real Temperature (°C)" type="number" step=0.01 pattern="^|">
+		</div>
+	</div>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">Pressure</span>
+		<input id="PressureCoef" name="PressureCoef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="0.01" required pattern="^|">
+		<input id="PressureOffset" name="PressureOffset" class="three columns" placeholder="" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="PressureUnit" name="PressureUnit" class="three columns" placeholder="Unite de mesure pression atmospherique" type="text" value="hPa" required pattern="^|"> -->
+		<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+		<select id="PressureUnit" class="three columns" name="PressureUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="Pa">Pascal (SI)</option>
 			<option value="hPa">hPa</option>
 			<option value="Bar">Bar</option>
@@ -811,45 +832,93 @@
 			<option value="atm">atmosphere</option>
 			<option value="mmHg">mm de mercure</option>
 		</select>
-	<span></span></div>
-	<div class="row"><span class="two columns">Humidity</span>
-		<input id="HumidityCoef" name="HumidityCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
-		<input id="HumidityOffset" name="HumidityOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="HumidityUnit" name="HumidityUnit" class="four columns" placeholder="Unite de mesure Humidite" type="text" value="%" required pattern="^|"> -->
-		<select id="HumidityUnit" class="two columns" name="HumidityUnit" size="1" onchange="forceEquation(this)" required>
+	</div>
+	<div class="row four columns">
+		<!-- <p class="seven columns button" onclick="calibration('Pressure');" style="padding:0px 0px">Calibrate</p> -->
+		<p class="two columns"></p>
+		<input id="PressureReal" name="PressureReal" class="ten columns" placeholder="Real Pressure (hPa)" type="number" step=0.0001 pattern="^|">
+	</div>
+</div>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">Humidity</span>
+		<input id="HumidityCoef" name="HumidityCoef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="HumidityOffset" name="HumidityOffset" class="three columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="HumidityUnit" name="HumidityUnit" class="three columns" placeholder="Unite de mesure Humidite" type="text" value="%" required pattern="^|"> -->
+		<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+		<select id="HumidityUnit" class="three columns" name="HumidityUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="%">%</option>
-		</select>	<span></span></div>
-	<div class="row"><span class="two columns">CO2</span>
-		<input id="CO2Coef" name="CO2Coef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
-		<input id="CO2Offset" name="CO2Offset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="CO2Unit" name="CO2Unit" class="four columns" placeholder="Unite de mesure CO2" type="text" value="ppm" required pattern="^|"> -->
-		<select id="CO2Unit" class="two columns" name="CO2Unit" size="1" onchange="forceEquation(this)" required>
+		</select>
+	</div>
+	<div class="row four columns">
+		<!-- <p class="seven columns button" onclick="calibration('Humidity');" style="padding:0px 0px">Calibrate</p> -->
+		<p class="two columns"></p>
+		<input id="HumidityReal" name="HumidityReal" class="ten columns" placeholder="Real Humidity (%)" type="number" step=0.01 pattern="^|">
+	</div>
+</div>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">CO2</span>
+		<input id="CO2Coef" name="CO2Coef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="CO2Offset" name="CO2Offset" class="three columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="CO2Unit" name="CO2Unit" class="three columns" placeholder="Unite de mesure CO2" type="text" value="ppm" required pattern="^|"> -->
+		<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+		<select id="CO2Unit" class="three columns" name="CO2Unit" size="1" onchange="forceEquation(this)" required>
 			<option value="ppm">ppm</option>
 			<option value="cm³/m³">cm³/m³</option>
 		</select>
-	<span></span></div>
-	<div class="row"><span class="two columns">LUX</span>
-		<input id="LUXCoef" name="LUXCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
-		<input id="LUXOffset" name="LUXOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="LUXUnit" name="LUXUnit" class="four columns" placeholder="Unite de mesure lumineuse" type="text" value="lux" required pattern="^|"> -->
-		<select id="LUXUnit" class="two columns" name="LUXUnit" size="1" onchange="forceEquation(this)" required>
+	</div>
+	<div class="row four columns">
+		<!-- <p class="seven columns button" onclick="calibration('CO2');" style="padding:0px 0px">Calibrate</p> -->
+		<p class="two columns"></p>
+		<input id="CO2Real" name="CO2Real" class="ten columns" placeholder="Real CO2 (ppm)" type="number" step=1 pattern="^|">
+	</div>
+</div>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">LUX</span>
+		<input id="LUXCoef" name="LUXCoef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="LUXOffset" name="LUXOffset" class="three columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="LUXUnit" name="LUXUnit" class="three columns" placeholder="Unite de mesure lumineuse" type="text" value="lux" required pattern="^|"> -->
+		<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+		<select id="LUXUnit" class="three columns" name="LUXUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="lux">lux</option>
 			<option value="lm/m²">lm/m²</option>
 		</select>
-	<span></span></div>
-	<div class="row"><span class="two columns">UV</span>
-		<input id="UVCoef" name="UVCoef" class="four columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
-		<input id="UVOffset" name="UVOffset" class="four columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
-		<!-- <input id="UVUnit" name="UVUnit" class="four columns" placeholder="Unite de mesure UV" type="text" value="index" required pattern="^|"> -->
-		<select id="UVUnit" class="two columns" name="UVUnit" size="1" onchange="forceEquation(this)" required>
+	</div>
+	<div class="row four columns">
+		<!-- <p class="seven columns button" onclick="calibration('LUX');" style="padding:0px 0px">Calibrate</p> -->
+		<p class="two columns"></p>
+		<input id="LUXReal" name="LUXReal" class="ten columns" placeholder="Real LUX (lux)" type="number" step=0.1 pattern="^|">
+	</div>
+</div>
+	<div class="row">
+		<div class="row eight columns">
+			<span class="three columns">UV</span>
+		<input id="UVCoef" name="UVCoef" class="three columns" placeholder="Coefficient 'a' de correction (Y=aX+b)" type=number step=any value="1" required pattern="^|">
+		<input id="UVOffset" name="UVOffset" class="three columns" placeholder="Offset 'b' de correction (Y=aX+b)" type=number step=any value="0" required pattern="^|">
+		<!-- <input id="UVUnit" name="UVUnit" class="three columns" placeholder="Unite de mesure UV" type="text" value="index" required pattern="^|"> -->
+		<!-- https://jsfiddle.net/ccallendar/5f8wzc3t/24/ -->
+		<select id="UVUnit" class="three columns" name="UVUnit" size="1" onchange="forceEquation(this)" required>
 			<option value="index">UV index</option>
 			<option value="w/m²">watt/m²</option>
 		</select>
-		<span></span></div>
-
-	<div class="u-max-full-width">
-		<input class="u-full-width button-primary" type="submit" value="Apply Settings">
 	</div>
+	<div class="row four columns">
+		<!-- <p class="seven columns button" onclick="calibration('UV');" style="padding:0px 0px">Calibrate</p> -->
+		<p class="two columns"></p>
+		<input id="UVReal" name="UVReal" class="ten columns" placeholder="Real UV (index)" type="number" step=0.01 pattern="^|">
+	</div>
+</div>
+	<div class="row">
+		<p class="eight columns">  </p>
+		<div class="row four columns">
+			<p class="two columns">  </p>
+			<p class="ten columns button" onclick="calibration('ALL');" style="padding:0px 0px">Calibrate</p>
+		</div>	
+	</div>
+	<br>
+	<input class="u-full-width button-primary" type="submit" value="Apply Settings">
 </form>
 					</div>
 				</div>
@@ -908,25 +977,32 @@
 		ajax('/data',function() {
 			if (this.readyState == 4 && this.status == 200) {
 				var Settings = JSON.parse(this.responseText).Settings;
+				var Probe = JSON.parse(this.responseText).Probe;
 				console.log(Settings);
 				document.getElementById("TemperatureCoef").value	= Settings.Probe.Temperature.Def.Coef
 				document.getElementById("TemperatureOffset").value	= Settings.Probe.Temperature.Def.Offset
 				document.getElementById("TemperatureUnit").value	= Settings.Probe.Temperature.Def.Unit
+				document.getElementById("TemperatureReal").value	= Probe.Temperature.Raw
 				document.getElementById("PressureCoef").value		= Settings.Probe.Pressure.Def.Coef
 				document.getElementById("PressureOffset").value		= Settings.Probe.Pressure.Def.Offset
 				document.getElementById("PressureUnit").value		= Settings.Probe.Pressure.Def.Unit
+				document.getElementById("PressureReal").value		= Math.round(Probe.Pressure.Raw*0.01,1)
 				document.getElementById("HumidityCoef").value		= Settings.Probe.Humidity.Def.Coef
 				document.getElementById("HumidityOffset").value		= Settings.Probe.Humidity.Def.Offset
 				document.getElementById("HumidityUnit").value		= Settings.Probe.Humidity.Def.Unit
+				document.getElementById("HumidityReal").value		= Probe.Humidity.Raw
 				document.getElementById("CO2Coef").value			= Settings.Probe.CO2.Def.Coef
 				document.getElementById("CO2Offset").value			= Settings.Probe.CO2.Def.Offset
 				document.getElementById("CO2Unit").value			= Settings.Probe.CO2.Def.Unit
+				document.getElementById("CO2Real").value			= Math.round(Probe.CO2.Raw)
 				document.getElementById("LUXCoef").value			= Settings.Probe.LUX.Def.Coef
 				document.getElementById("LUXOffset").value			= Settings.Probe.LUX.Def.Offset
 				document.getElementById("LUXUnit").value			= Settings.Probe.LUX.Def.Unit
+				document.getElementById("LUXReal").value			= Probe.LUX.Raw
 				document.getElementById("UVCoef").value				= Settings.Probe.UV.Def.Coef
 				document.getElementById("UVOffset").value			= Settings.Probe.UV.Def.Offset
 				document.getElementById("UVUnit").value				= Settings.Probe.UV.Def.Unit
+				document.getElementById("UVReal").value				= Probe.UV.Raw
 				if (Settings.gps.longitude==0 && Settings.gps.latitude==0 && Settings.gps.altitude==0) {
 					console.log(Settings.gps.longitude,Settings.gps.latitude,Settings.gps.altitude);
 					getLocation();
@@ -938,18 +1014,32 @@
 			}
 		});
 
+		function calibration(type) {
+			const param = '?Temperature='+document.getElementById("TemperatureReal").value
+					param += '&Pressure='+document.getElementById("PressureReal").value
+					param += '&Humidity='+document.getElementById("HumidityReal").value
+					param += '&CO2='+document.getElementById("CO2Real").value
+					param += '&LUX='+document.getElementById("LUXReal").value
+					param += '&UV='+document.getElementById("UVReal").value
+			ajax('/calibrate'+param ,
+				function() {
+					console.log(JSON.parse(this.responseText));
+					document.getElementById(type+"Real").value = '';		
+				}
+			)
+			console.log('calibration(',type,') = ',document.getElementById(type+"Real").value);
+		}
 
 
-
-		function getElevation(event)
-{var clickedLocation=event.latlng;
-	var locations=[];
-	locations.push(clickedLocation);
-	console.log(clickedLocation);
-	outputDiv.innerHTML="Please Wait...";
-$.ajax({url:"https://elevation-api.io/api/elevation?key="+elevationapikey+"&resolution=90&points=("+clickedLocation.lat+","+clickedLocation.lng+")",success:function(result){console.log(result);
-	
-	https://elevation-api.io/api/elevation?key=wB26f6f3z43hiwLDdbRBOyCHcuK2oc&resolution=90&points=(43.2130308242996,-0.4664388298988343)
+	// 		function getElevation(event)
+	// {var clickedLocation=event.latlng;
+	// 	var locations=[];
+	// 	locations.push(clickedLocation);
+	// 	console.log(clickedLocation);
+	// 	outputDiv.innerHTML="Please Wait...";
+	// $.ajax({url:"https://elevation-api.io/api/elevation?key="+elevationapikey+"&resolution=90&points=("+clickedLocation.lat+","+clickedLocation.lng+")",success:function(result){console.log(result);
+		
+	// https://elevation-api.io/api/elevation?key=wB26f6f3z43hiwLDdbRBOyCHcuK2oc&resolution=90&points=(43.2130308242996,-0.4664388298988343)
 	
 	</script>
 </html>

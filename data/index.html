@@ -26,12 +26,12 @@
 			position: relative;
 		}
 		.ellipses-container {
-			width: 25rem;
-			height: 25rem;
+			width: 24rem;
+			height: 48rem;
 			border-radius: 50%;
 			margin: 0 auto;
 			position: relative;
-			top: 2rem;
+			top: 200px;
 		}
 		.ellipses-container .greeting {
 			position: absolute;
@@ -807,7 +807,7 @@
 						<a class="three columns button" href="/Sensors">Config Sensors</a>
 						<a class="three columns button" href="/data">View Data {Json}</a>
 					</span>
-
+					<hr>
 <form action='./Settings/apply' method="GET" enctype="text/plain">
 	<table class="u-full-width"><tbody>
 		<tr><td>
@@ -918,7 +918,7 @@
 				console.log(Settings);
 				document.getElementById("EnableDeepSleep").checked = Settings.EnableDeepSleep;
 				document.getElementById("DisplayDuringDeepSleep").checked = Settings.DisplayDuringDeepSleep;
-				document.getElementById("SSID").value = Settings.Lan.SSID;
+				document.getElementById("SSID").value = Settings.Lan.Wifi.SSID;
 				document.getElementById("PWD").value = Settings.Lan.PWD;
 				document.getElementById("Hostname").value = Settings.Lan.Hostname;
 				document.getElementById("Tags").value = Settings.Lan.Tags;

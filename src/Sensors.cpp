@@ -361,30 +361,63 @@ void readBME280(){
 	// }
     xSemaphoreGive( mutex );
 }
+void calibrateSCD40(double TempOffset, double realPressure, int realCO2){
+	xSemaphoreTake( mutex, portMAX_DELAY );
+		scd4x.stopPeriodicMeasurement();
+		vTaskDelay(500);
+		scd4x.setTemperatureOffset(TempOffset);
+		scd4x.setAmbientPressure(realPressure);
+		vTaskDelay(500);
+		uint16_t frc;
+		scd4x.performForcedRecalibration(realCO2, frc);
+		if (frc != 0xFFFF) {
+			Serial.println('calibrateSCD40')
+		}
+		// scd4x.persistSettings(); // save on EEPROM
+		scd4x.startLowPowerPeriodicMeasurement();
+    xSemaphoreGive( mutex );
+}
 void readSCD40(){
 	xSemaphoreTake( mutex, portMAX_DELAY );
 	Serial.println("+---> readSCD40()");
+	// if (scd4x.getDataReadyStatus()){
 	uint16_t error;
-    char errorMessage[256];
-    uint16_t CO2;
-    float temperature;
-    float humidity;
-    error = scd4x.readMeasurement(CO2, temperature, humidity);
+	char errorMessage[256];
 
+
+	uint16_t isDataReady = 0;
+    error = scd4x.getDataReadyStatus(isDataReady);
     if (error) {
         Serial.print("Error trying to execute readMeasurement(): ");
         errorToString(error, errorMessage, 256);
         Serial.println(errorMessage);
-    } else if (CO2 == 0) {
-        Serial.println("Invalid sample detected, skipping.");
-    } else {
-		CurrentProbe.Probe.CO2.Set(CO2);
-		CurrentProbe.Probe.Temperature.Set(temperature);
-		CurrentProbe.Probe.Humidity.Set(humidity);
-    	Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
-    	Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
-    	Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
+        return;
     }
+    if (isDataReady) {
+		uint16_t CO2;
+		float temperature;
+		float humidity;
+		error = scd4x.readMeasurement(CO2, temperature, humidity);
+
+		if (error) {
+			Serial.print("Error trying to execute readMeasurement(): ");
+			errorToString(error, errorMessage, 256);
+			Serial.println(errorMessage);
+		} else if (CO2 == 0) {
+			Serial.println("Invalid sample detected, skipping.");
+		} else {
+			CurrentProbe.Probe.CO2.Set(CO2);
+			CurrentProbe.Probe.Temperature.Set(temperature);
+			CurrentProbe.Probe.Humidity.Set(humidity);
+			Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
+			Serial.printf("|   +---> Temperature : %s\n",CurrentProbe.Probe.Temperature.toString().c_str());
+			Serial.printf("|   +---> Humidity : %s\n",CurrentProbe.Probe.Humidity.toString().c_str());
+		}
+		// } else {
+		// 	Serial.printf("|   +---> No Data Ready!\n");
+		// }
+    }
+	
     xSemaphoreGive( mutex );
 }
 void getSensorData(void * parameter) {
@@ -404,25 +437,26 @@ void getSensorData(void * parameter) {
     	Serial.printf("|   +---> Battery.Voltage : %s\n",CurrentProbe.Energy.Battery.Voltage.toString().c_str());
 		CurrentProbe.Energy.Battery.Capacity.Set( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Raw, CurrentProbe.Energy.PowerSupply.Voltage.Raw) );
     	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
+
+		if(i2cbus.SCD40){
+			readSCD40();
+		// } else {
+		// 	Serial.println("+---> Missing SCD40[CO2] sensor!");
+		}
 		if(i2cbus.BMP280){
 			readBMP280();
 		// } else {
 		// 	Serial.println("+---> Missing BMP280 sensor!");
-		}
-		if(i2cbus.VEML7700){
-			readVEML7700();
-		// } else {
-		// 	Serial.println("+---> Missing Lux sensor!");
 		}
 		if(i2cbus.BME280){
 			readBME280();
 		// } else {
 		// 	Serial.println("+---> Missing BME280 sensor!");
 		}
-		if(i2cbus.SCD40){
-			readSCD40();
+		if(i2cbus.VEML7700){
+			readVEML7700();
 		// } else {
-		// 	Serial.println("+---> Missing SCD40[CO2] sensor!");
+		// 	Serial.println("+---> Missing Lux sensor!");
 		}
 		// Transfert = false;
 		Working = false;
