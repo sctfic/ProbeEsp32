@@ -16,6 +16,7 @@ bool OnOff = true;
 bool WIFI_CONNECTED = false;
 bool DataReady = false;
 int IgnoreDeepSleep = 0;
+char charging = 0;
 
 const char * SettingsPath = "/Settings.json";
 

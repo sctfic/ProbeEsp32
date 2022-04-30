@@ -3,6 +3,7 @@
 #include <Adafruit_SSD1306.h>
 
 #include "global.h"
+#include "sensors.h"
 
 //OLED pins
 // #define I2C_SDA 5
@@ -151,16 +152,16 @@ void displayTransfert(bool color){
 	}
 }
 void displayBatteryLevel(int batteryLevel){
-		display.fillRect(120, 0, 8, 16, BLACK);
-		display.drawPixel(123, 0, WHITE);
-		display.drawPixel(124, 0, WHITE);
-		display.drawRect(120, 1, 8, 15, WHITE);
-	if (batteryLevel > 100) {
-		// trace un plus/moins
-		display.drawRect(123, 3, 2, 4, WHITE);
-		display.drawRect(122, 4, 4, 2, WHITE);
-		display.drawRect(122, 12, 4, 2, WHITE);
-
+	display.fillRect(120, 0, 8, 16, BLACK);
+	display.drawPixel(123, 0, WHITE);
+	display.drawPixel(124, 0, WHITE);
+	display.drawRect(120, 1, 8, 15, WHITE);
+	double vPow = getPowerVoltage();
+	double vBat = getBatteryVoltage();
+	if (vPow > vBat && vPow < 4.7) {
+	// if (CurrentProbe.Energy.PowerSupply.Voltage.Value() > CurrentProbe.Energy.Battery.Voltage.Value() && CurrentProbe.Energy.Battery.Voltage.Value() > 2) {
+		charging = (charging+4)%100;
+		display.fillRect(122, 3+lround((100-charging)*0.11), 4, lround((charging)*0.11), WHITE);
 	} else if(batteryLevel > 0) {
 		// trace le rectangle interieur du niveau de batterie
 		display.fillRect(122, 3+lround((100-batteryLevel)*0.11), 4, lround((batteryLevel)*0.11), WHITE);
@@ -286,7 +287,6 @@ void displayDeepSleep(){
 void redrawScreen(){
     display.clearDisplay();
     displayNetwork();
-    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value());
     displaySensor();
     display.drawBitmap(0, SCREEN_BLUE_0,  logoNB, 23, 48, true);
 }
@@ -305,13 +305,14 @@ void manageScreen(void * parameter){
 	}
 	for (;;) {
 		i = 10;
-		redrawScreen(); // 1 fois / sec
+		redrawScreen(); // 1000ms
 		// Serial.printf("OnOff = %d - ",OnOff);
 		// Serial.printf("Working = %d - ",Working);
 		// Serial.printf("DeepSleepNow = %d\n",DeepSleepNow); // DeepSleepNow = uploadData
 		// Serial.printf("%d || (%d && %d)\n",Working, !Working, OnOff);
 		while (i--) {
-			displayTransfert(OnOff); // 10 fois / sec
+		    displayBatteryLevel(CurrentProbe.Energy.Battery.Capacity.Value());
+			displayTransfert(OnOff); // 100ms
 			refreshScreen();
 			vTaskDelay(100);
 		}

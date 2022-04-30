@@ -18,14 +18,14 @@
 
 void setup_Routing(){
 	// Web Server Root URL
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-		IgnoreDeepSleep = 600;
-		Transfert = true;
-		Serial.println(request->url());
-		request->send(SPIFFS, "/index.html", "text/html");
-		delay(1000);
-		Transfert = false;
-	});
+	// server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+	// 	IgnoreDeepSleep = 600;
+	// 	Transfert = true;
+	// 	Serial.println(request->url());
+	// 	request->send(SPIFFS, "/index.html", "text/html");
+	// 	delay(1000);
+	// 	Transfert = false;
+	// });
 
 	// display JSON of data
 	server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request){
@@ -113,26 +113,22 @@ void setup_Routing(){
 		CurrentProbe.Settings.room 			= request->arg("room").c_str();
 		CurrentProbe.Settings.type 			= request->arg("type").c_str();
 
-
-		// for(int i=0;i<paramsNr;i++){
-		// 	AsyncWebParameter* p = request->getParam(i);
-		// 	Serial.print(p->name());
-		// 	Serial.print(" = ");
-		// 	Serial.println(p->value());
-		// }
 		const char * data = CurrentProbe.Settings.toJson().c_str();
-		// request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
 		writeFile(SPIFFS, SettingsPath, data);
 		Serial.println(readFile(SPIFFS, SettingsPath).c_str());
 
-		// request->send(200, "application/json", data);
-		request->send(SPIFFS, "/Sensors.html", "text/html");
 		Transfert = false;
+		if (!CurrentProbe.Settings.Lan.DHCP){
+			request->redirect(("http://" + CurrentProbe.Settings.Lan.IP + "/Sensors").c_str());
+		} else {
+			request->redirect("/Sensors");
+			// request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: ");
+		}
 		delay(3000);
 		ESP.restart();
 	});
 	// Save and apply new conf
-	server.on("/Sensors/apply", HTTP_GET, [](AsyncWebServerRequest *request){
+	server.on("/Sensors/apply", HTTP_POST, [](AsyncWebServerRequest *request){
 		IgnoreDeepSleep = 60;
 		Transfert = true;
 		Serial.println(request->url());
@@ -140,6 +136,7 @@ void setup_Routing(){
 		CurrentProbe.Settings.gps.longitude = std::stod(request->arg("Longitude").c_str());
 		CurrentProbe.Settings.gps.latitude = std::stod(request->arg("Latitude").c_str());
 		CurrentProbe.Settings.gps.altitude = std::stoi(request->arg("Altitude").c_str());
+		Serial.println(CurrentProbe.Settings.gps.toJson().c_str());
 
 		CurrentProbe.Settings.Probe.Temperature.Def	= SENSOR_DEF(
 			std::stod(request->arg("TemperatureCoef").c_str()),
@@ -171,23 +168,18 @@ void setup_Routing(){
 			std::stod(request->arg("UVOffset").c_str()),
 			request->arg("UVUnit").c_str()
 		);
+
 		// Serial.println(CurrentProbe.Settings.Probe.toJson().c_str());
 		CurrentProbe.Probe	= CurrentProbe.Settings.Probe;
-		// Serial.println(CurrentProbe.Probe.toJson().c_str());
 
-		// for(int i=0;i<paramsNr;i++){
-		// 	AsyncWebParameter* p = request->getParam(i);
-		// 	Serial.print(p->name());
-		// 	Serial.print(" = ");
-		// 	Serial.println(p->value());
-		// }
 		const char * data = CurrentProbe.Settings.toJson().c_str();
 		// request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
 		writeFile(SPIFFS, SettingsPath, data);
 		Serial.println(readFile(SPIFFS, SettingsPath).c_str());
+		request->redirect("/Sensors");
 
 		// request->send(200, "application/json", data);
-		request->send(SPIFFS, "/Sensors.html", "text/html");
+		// request->send(SPIFFS, "/Sensors.html", "text/html");
 		Transfert = false;
 	});
     // Web Server Sensor URL
@@ -212,7 +204,7 @@ void setup_Routing(){
 			// LUX
 			// UV
 			calibrateSCD40(
-				std::stod(request->arg("Temperature").c_str()) - CurrentProbe.Probe.Temperature.Value(),
+				std::stod(request->arg("Temperature").c_str()) - CurrentProbe.Probe.Temperature.Raw,
 				std::stod(request->arg("Pressure").c_str()),
 				std::stoi(request->arg("CO2").c_str())
 			);
@@ -228,7 +220,8 @@ void setup_Routing(){
 		Serial.println(request->arg("type").c_str());
 		Transfert = false;
 	});
-    server.serveStatic("/", SPIFFS, "/");
+    server.serveStatic("/", SPIFFS, "/")
+    	.setDefaultFile("index.html");
     
     server.begin();
 	Serial.println("> Web Route applyed ! ");
@@ -241,16 +234,16 @@ bool uploadData(const char * data, const char * url) {
 		Transfert = true;
 		// Send request
 		httpClient.begin(Wclient, url);
-		Serial.printf("+---> Upload(JSON) to %s > ", url);
 		httpClient.addHeader("Content-Type", "application/json");
-		int httpResponseCode = httpClient.POST(data);
+		uint httpResponseCode = httpClient.POST(data);
 
 		// Read response
-		Serial.println(httpResponseCode);
+		// Serial.println(httpResponseCode);
 		// Serial.println(httpClient.getString());
 
 		// Disconnect
 		httpClient.end();
+		Serial.printf("+---> Upload(JSON) to %s > %i\n", url,httpResponseCode);
 		Transfert = false;
 		return httpResponseCode == 201 ? true : false;
 	}

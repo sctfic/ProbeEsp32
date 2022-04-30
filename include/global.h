@@ -24,7 +24,7 @@ extern bool OnOff;
 extern bool WIFI_CONNECTED;
 extern bool DataReady;
 extern int IgnoreDeepSleep;
-
+extern char charging;
 
 
 extern const char * SettingsPath;
@@ -175,6 +175,15 @@ class GPS{
 		double latitude;
 		int altitude;
         NLOHMANN_DEFINE_TYPE_INTRUSIVE(GPS, longitude, latitude, altitude)
+		//"{...}" = maMesure.toJson();
+		inline std::string toJson(){
+			nlohmann::json json = *this;
+			return json.dump();
+		};
+		// GPS maMesure = GPS::fromJson("{...}");
+		inline static GPS fromJson(const std::string& jsonString){
+			return nlohmann::json::parse(jsonString, NULL, false, true).get<GPS>();
+		};
 	};
 class ENERGY{
     public:

@@ -3,12 +3,10 @@
 
 void getSensorData(void * parameter);
 void heartPulse(void * parameter);
-
+double getPowerVoltage();
+double getBatteryVoltage();
 /**
- * calibrateSCD40() - The set_ambient_pressure command can be sent
- * during periodic measurements to enable continuous pressure compensation.
- * Note that setting an ambient pressure to the sensor overrides any
- * pressure compensation based on a previously set sensor altitude.
+ * calibrateSCD40() - Etalonage selon les valeur reele du moment
  *
  * @note Available during measurements.
  *

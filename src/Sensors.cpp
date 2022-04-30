@@ -160,7 +160,7 @@ bool initSCD40(){
     // } else {
     //     printSerialNumber(serial0, serial1, serial2);
     // }
-	error = scd4x.setAutomaticSelfCalibration(true);
+	error = scd4x.setAutomaticSelfCalibration(false);
 	if (error) {
         Serial.print("Error trying to execute setAutomaticSelfCalibration(): ");
         errorToString(error, errorMessage, 256);
@@ -371,7 +371,7 @@ void calibrateSCD40(double TempOffset, double realPressure, int realCO2){
 		uint16_t frc;
 		scd4x.performForcedRecalibration(realCO2, frc);
 		if (frc != 0xFFFF) {
-			Serial.println('calibrateSCD40')
+			Serial.println("calibrateSCD40");
 		}
 		// scd4x.persistSettings(); // save on EEPROM
 		scd4x.startLowPowerPeriodicMeasurement();
@@ -383,7 +383,6 @@ void readSCD40(){
 	// if (scd4x.getDataReadyStatus()){
 	uint16_t error;
 	char errorMessage[256];
-
 
 	uint16_t isDataReady = 0;
     error = scd4x.getDataReadyStatus(isDataReady);
@@ -420,6 +419,22 @@ void readSCD40(){
 	
     xSemaphoreGive( mutex );
 }
+void readPower(bool confirm = false){
+
+	double VBat = getBatteryVoltage();
+	double VPow = getPowerVoltage();
+
+	if (confirm) {
+		vTaskDelay( 2000 );
+		if (getBatteryVoltage() > VBat) {
+			readPower();
+		}
+	} else {
+		CurrentProbe.Energy.PowerSupply.Voltage.Set( VPow );
+		CurrentProbe.Energy.Battery.Voltage.Set( VBat);
+		CurrentProbe.Energy.Battery.Capacity.Set( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Raw, CurrentProbe.Energy.PowerSupply.Voltage.Raw) );
+	}
+}
 void getSensorData(void * parameter) {
 	i2cbus.BMP280  = initBMP280();
 	i2cbus.BME280  = initBME280();
@@ -431,12 +446,7 @@ void getSensorData(void * parameter) {
 		Serial.println("+---> readSensors()");
 		// CurrentProbe.Probe.CO2.Set( rand() % 100 + 415);
     	// Serial.printf("|   +---> CO2 : %s\n",CurrentProbe.Probe.CO2.toString().c_str());
-		CurrentProbe.Energy.PowerSupply.Voltage.Set( getPowerVoltage());
-    	Serial.printf("|   +---> PowerSupply.Voltage : %s\n",CurrentProbe.Energy.PowerSupply.Voltage.toString().c_str());
-		CurrentProbe.Energy.Battery.Voltage.Set( getBatteryVoltage());
-    	Serial.printf("|   +---> Battery.Voltage : %s\n",CurrentProbe.Energy.Battery.Voltage.toString().c_str());
-		CurrentProbe.Energy.Battery.Capacity.Set( getBatteryCapacity(CurrentProbe.Energy.Battery.Voltage.Raw, CurrentProbe.Energy.PowerSupply.Voltage.Raw) );
-    	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
+		readPower(false);
 
 		if(i2cbus.SCD40){
 			readSCD40();
@@ -458,9 +468,14 @@ void getSensorData(void * parameter) {
 		// } else {
 		// 	Serial.println("+---> Missing Lux sensor!");
 		}
+		readPower(true);
+    	Serial.printf("|   +---> PowerSupply.Voltage : %s\n",CurrentProbe.Energy.PowerSupply.Voltage.toString().c_str());
+    	Serial.printf("|   +---> Battery.Voltage : %s\n",CurrentProbe.Energy.Battery.Voltage.toString().c_str());
+    	Serial.printf("|   +---> Battery.Capacity : %s\n",CurrentProbe.Energy.Battery.Capacity.toString().c_str());
+
 		// Transfert = false;
 		Working = false;
-		vTaskDelay( 5000 );
+		vTaskDelay( 3000 );
 		DataReady = true;
 	}
 }
